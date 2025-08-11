@@ -29,11 +29,11 @@ describe("Auto-escape functionality", () => {
     expect(result).toBe(expected);
   });
 
-  test("should handle mixed quoting styles with fallback escaping", () => {
+  test("should handle mixed quoting styles elegantly", () => {
     const input = `'already quoted' normal "double quoted" time: 2025-01-01T10:30:00Z`;
     
-    // Falls back to aggressive escaping due to mixed quotes
-    const expected = `"''already'" quoted  "normal'" '"double' 'quoted"' 'time:' '2025-01-01T10:30:00Z'`;
+    // Should preserve quotes and only escape colon tokens (lino normalizes to single quotes)
+    const expected = `'already quoted' normal 'double quoted' 'time:' '2025-01-01T10:30:00Z'`;
     
     const result = deduplicate(input, 0.2, true);
     expect(result).toBe(expected);

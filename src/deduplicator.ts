@@ -282,16 +282,40 @@ function autoEscape(input: string): string {
     parser.parse(escaped);
     return escaped; // Success with minimal escaping
   } catch (error) {
-    // If that doesn't work, try a second pass with more aggressive escaping
-    // Escape anything that looks problematic (contains special characters)
-    let secondPass = input.replace(/\b([^\s'"()]*[!@#$%^&*+=|\\:;?/<>.,]+[^\s'"()]*)\b/g, "'$1'");
+    // Second attempt: try escaping tokens that have problematic characters
+    // but preserve already quoted strings and simple tokens
+    const lines = input.split('\n');
+    const processedLines = lines.map(line => {
+      const tokens = line.split(/\s+/).filter(token => token.length > 0);
+      return tokens.map(token => {
+        // Skip tokens that are already quoted
+        if ((token.startsWith("'") && token.endsWith("'")) || 
+            (token.startsWith('"') && token.endsWith('"'))) {
+          return token;
+        }
+        
+        // Skip simple punctuation
+        if (/^[(){}[\],]+$/.test(token)) {
+          return token;
+        }
+        
+        // Escape tokens with colons, or problematic parentheses combinations
+        if (token.includes(':') || /[()][a-zA-Z]|[a-zA-Z][()]/.test(token)) {
+          return `'${token}'`;
+        }
+        
+        // Keep simple tokens as-is
+        return token;
+      }).join(' ');
+    });
+    
+    const secondPass = processedLines.join('\n');
     
     try {
       parser.parse(secondPass);
       return secondPass;
     } catch (error2) {
       // Final fallback: escape everything by splitting on whitespace
-      const lines = input.split('\n');
       return lines.map(line => {
         const tokens = line.split(/\s+/).filter(token => token.length > 0);
         return tokens.map(token => {

@@ -1,4 +1,4 @@
-import { Parser, Link } from '@linksplatform/protocols-lino';
+import { Parser, Link, formatLinks } from '@linksplatform/protocols-lino';
 
 interface Pattern {
   type: 'exact' | 'prefix' | 'suffix';
@@ -277,8 +277,10 @@ function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
       
       if (pattern.type === 'exact') {
         if (!definedPatterns.has(refId)) {
-          // Define the reference - use values array instead of id with colon
-          result.push(new Link(refId.toString(), [new Link(content, [])]));
+          // Define the reference - split multi-word content into separate Links
+          const words = content.split(/\s+/);
+          const valueLinks = words.map(w => new Link(w, []));
+          result.push(new Link(refId.toString(), valueLinks));
           definedPatterns.add(refId);
         }
         // Use the reference
@@ -286,8 +288,10 @@ function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
       } else if (pattern.type === 'prefix') {
         const suffix = content.substring(pattern.pattern.length).trim();
         if (!definedPatterns.has(refId)) {
-          // Define the reference for prefix
-          result.push(new Link(refId.toString(), [new Link(pattern.pattern, [])]));
+          // Define the reference for prefix - split into separate Links
+          const words = pattern.pattern.split(/\s+/);
+          const valueLinks = words.map(w => new Link(w, []));
+          result.push(new Link(refId.toString(), valueLinks));
           definedPatterns.add(refId);
         }
         // Use the reference with suffix
@@ -303,8 +307,10 @@ function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
       } else if (pattern.type === 'suffix') {
         const prefix = content.substring(0, content.length - pattern.pattern.length).trim();
         if (!definedPatterns.has(refId)) {
-          // Define the reference for suffix
-          result.push(new Link(refId.toString(), [new Link(pattern.pattern, [])]));
+          // Define the reference for suffix - split into separate Links
+          const words = pattern.pattern.split(/\s+/);
+          const valueLinks = words.map(w => new Link(w, []));
+          result.push(new Link(refId.toString(), valueLinks));
           definedPatterns.add(refId);
         }
         // Use the reference with prefix
@@ -327,81 +333,6 @@ function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
   return result;
 }
 
-function customFormatLinks(links: Link[]): string {
-  const result: string[] = [];
-  
-  for (const link of links) {
-    // Check if this is a reference definition (e.g., "1: content")
-    if (link.id && link.values.length === 1 && !link.values[0].values.length) {
-      // This is a reference definition
-      const refId = link.id;
-      const content = link.values[0].id || '';
-      result.push(`(${refId}: ${content})`);
-    } 
-    // Check if this is a compound link with reference and suffix/prefix
-    else if (!link.id && link.values.length > 0) {
-      // Check if it's a deduplicated pattern (starts with a reference number)
-      let isDedupPattern = false;
-      const parts: string[] = [];
-      
-      for (const val of link.values) {
-        if (val.id && !val.values.length) {
-          // Check if first value is a reference number
-          if (parts.length === 0 && /^\d+$/.test(val.id)) {
-            isDedupPattern = true;
-          }
-          parts.push(val.id);
-        } else if (val.values && val.values.length > 0) {
-          // Handle nested structures (like "(this is)")
-          const nestedParts: string[] = [];
-          const collectNested = (v: Link) => {
-            if (v.id && !v.values.length) {
-              nestedParts.push(v.id);
-            } else if (v.values) {
-              for (const subVal of v.values) {
-                collectNested(subVal);
-              }
-            }
-          };
-          collectNested(val);
-          
-          // For non-deduplicated nested content, preserve parentheses
-          if (!isDedupPattern && nestedParts.length > 0) {
-            parts.push(`(${nestedParts.join(' ')})`);
-          } else {
-            parts.push(...nestedParts);
-          }
-        }
-      }
-      
-      if (isDedupPattern || parts.some(p => /^\d+$/.test(p))) {
-        // For deduplicated patterns or patterns containing references, just join without extra parentheses
-        result.push(parts.join(' '));
-      } else if (parts.length > 0) {
-        // For non-deduplicated multi-word links, add parentheses
-        result.push(`(${parts.join(' ')})`);
-      } else {
-        // Fall back to standard formatting
-        result.push(link.format(false));
-      }
-    }
-    // Check if this is just a reference usage
-    else if (link.id && !link.values.length && /^\d+$/.test(link.id)) {
-      result.push(link.id);
-    }
-    // Default: preserve parentheses for non-deduplicated links
-    else {
-      // For simple links with just an id, add parentheses
-      if (link.id && !link.values.length) {
-        result.push(`(${link.id})`);
-      } else {
-        result.push(link.format(false));
-      }
-    }
-  }
-  
-  return result.join('\n');
-}
 
 export function deduplicate(input: string, topPercentage: number = 0.2): string {
   if (!input.trim()) return input;
@@ -423,21 +354,13 @@ export function deduplicate(input: string, topPercentage: number = 0.2): string 
   
   // Check if patterns are found but not selected
   if (selectedPatterns.length === 0) {
-    // Check if we have structured links that should be deduplicated
-    const hasStructuredDuplicates = links.filter(link => 
-      !link.id && link.values && link.values.length > 1 && 
-      link.values[0].values && link.values[0].values.length > 0
-    ).length >= 2;
-    
-    if (hasStructuredDuplicates) {
-      // Return formatted version
-      return customFormatLinks(links);
-    }
-    return input;
+    // Return formatted version using the library's formatLinks
+    // This ensures consistent formatting even when no deduplication occurs
+    return formatLinks(links, true);
   }
   
   const deduplicatedLinks = applyPatterns(links, selectedPatterns);
   
-  // Use custom formatter for the expected output format
-  return customFormatLinks(deduplicatedLinks);
+  // Use the formatLinks function from the library
+  return formatLinks(deduplicatedLinks, true);
 }

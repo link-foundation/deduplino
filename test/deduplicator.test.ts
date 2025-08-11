@@ -6,7 +6,7 @@ describe("Lino Deduplicator", () => {
     const input = `(first second)
 (first second)`;
     
-    const expected = `(1: first second)
+    const expected = `1: first second
 1
 1`;
     
@@ -19,7 +19,7 @@ describe("Lino Deduplicator", () => {
 (first second)
 (first second)`;
     
-    const expected = `(1: first second)
+    const expected = `1: first second
 1
 1
 1`;
@@ -30,8 +30,9 @@ describe("Lino Deduplicator", () => {
 
   test("should handle single occurrence (no deduplication needed)", () => {
     const input = "(unique)";
+    const expected = "unique";
     const result = deduplicate(input);
-    expect(result).toBe(input);
+    expect(result).toBe(expected);
   });
 
   test("should handle multiple different pairs", () => {
@@ -39,9 +40,9 @@ describe("Lino Deduplicator", () => {
 (third fourth)
 (first second)`;
     
-    const expected = `(1: first second)
+    const expected = `1: first second
 1
-(third fourth)
+third fourth
 1`;
     
     const result = deduplicate(input);
@@ -55,11 +56,11 @@ describe("Lino Deduplicator", () => {
 (b)
 (b)`;
     
-    const expected = `(a)
-(a)
-(a)
-(b)
-(b)`;
+    const expected = `a
+a
+a
+b
+b`;
     
     const result = deduplicate(input);
     expect(result).toBe(expected);
@@ -72,12 +73,12 @@ describe("Lino Deduplicator", () => {
 (other pair)
 (other pair)`;
     
-    const expected = `(1: first second)
+    const expected = `1: first second
 1
 1
 1
-(other pair)
-(other pair)`;
+other pair
+other pair`;
     
     const result = deduplicate(input);
     expect(result).toBe(expected);
@@ -99,7 +100,7 @@ describe("Lino Deduplicator", () => {
       const input = `(this is) a link
 (this is) a link`;
       
-      const expected = `(1: this is)
+      const expected = `1: this is
 1 a link
 1 a link`;
       
@@ -111,7 +112,7 @@ describe("Lino Deduplicator", () => {
       const input = `(this is a) link
 (this is a) link`;
       
-      const expected = `(1: this is a)
+      const expected = `1: this is a
 1 link
 1 link`;
       
@@ -124,7 +125,7 @@ describe("Lino Deduplicator", () => {
 (this is a link)
 (this is a link)`;
       
-      const expected = `(1: this is a link)
+      const expected = `1: this is a link
 1
 1
 1`;
@@ -137,7 +138,7 @@ describe("Lino Deduplicator", () => {
       const input = `(this is a long link)
 (this is a long link)`;
       
-      const expected = `(1: this is a long link)
+      const expected = `1: this is a long link
 1
 1`;
       
@@ -149,7 +150,7 @@ describe("Lino Deduplicator", () => {
       const input = `(this is a very long link)
 (this is a very long link)`;
       
-      const expected = `(1: this is a very long link)
+      const expected = `1: this is a very long link
 1
 1`;
       
@@ -161,7 +162,7 @@ describe("Lino Deduplicator", () => {
       const input = `(this is a really very long link)
 (this is a really very long link)`;
       
-      const expected = `(1: this is a really very long link)
+      const expected = `1: this is a really very long link
 1
 1`;
       
@@ -173,7 +174,7 @@ describe("Lino Deduplicator", () => {
       const input = `(this is a link of cat)
 (this is a link of tree)`;
       
-      const expected = `(1: this is a link of)
+      const expected = `1: this is a link of
 1 cat
 1 tree`;
       
@@ -189,7 +190,7 @@ describe("Lino Deduplicator", () => {
       
       // The simplified algorithm finds "this is a" as the common prefix for all 4 items
       // This is a valid deduplication, just different from the original
-      const expected = `(1: this is a)
+      const expected = `1: this is a
 1 link of cat
 1 link of tree
 1 different thing
@@ -205,7 +206,7 @@ describe("Lino Deduplicator", () => {
       const input = `(hello world foo)
 (hello world bar)`;
       
-      const expected = `(1: hello world)
+      const expected = `1: hello world
 1 foo
 1 bar`;
       
@@ -218,7 +219,7 @@ describe("Lino Deduplicator", () => {
 (the quick brown fox runs)
 (the quick brown fox sleeps)`;
       
-      const expected = `(1: the quick brown fox)
+      const expected = `1: the quick brown fox
 1 jumps
 1 runs
 1 sleeps`;
@@ -233,10 +234,10 @@ describe("Lino Deduplicator", () => {
 (system network setup)
 (system network reset)`;
       
-      const expected = `(1: system config enable)
+      const expected = `1: system config enable
 1 debug
 1 verbose
-(2: system network)
+2: system network
 2 setup
 2 reset`;
       
@@ -250,10 +251,10 @@ describe("Lino Deduplicator", () => {
 (epsilon zeta eta)
 (epsilon zeta theta)`;
       
-      const expected = `(1: alpha beta)
+      const expected = `1: alpha beta
 1 gamma
 1 delta
-(2: epsilon zeta)
+2: epsilon zeta
 2 eta
 2 theta`;
       
@@ -267,7 +268,7 @@ describe("Lino Deduplicator", () => {
       const input = `(foo ends here)
 (bar ends here)`;
       
-      const expected = `(1: ends here)
+      const expected = `1: ends here
 foo 1
 bar 1`;
       
@@ -280,7 +281,7 @@ bar 1`;
 (run over the lazy dog)
 (walk over the lazy dog)`;
       
-      const expected = `(1: over the lazy dog)
+      const expected = `1: over the lazy dog
 jump 1
 run 1
 walk 1`;
@@ -295,10 +296,10 @@ walk 1`;
 (setup system network)
 (reset system network)`;
       
-      const expected = `(1: system config)
+      const expected = `1: system config
 enable debug 1
 enable verbose 1
-(2: system network)
+2: system network
 setup 2
 reset 2`;
       
@@ -312,10 +313,10 @@ reset 2`;
 (epsilon zeta eta)
 (theta zeta eta)`;
       
-      const expected = `(1: beta gamma)
+      const expected = `1: beta gamma
 alpha 1
 delta 1
-(2: zeta eta)
+2: zeta eta
 epsilon 2
 theta 2`;
       
@@ -328,7 +329,7 @@ theta 2`;
 (second word is important)
 (third word is important)`;
       
-      const expected = `(1: word is important)
+      const expected = `1: word is important
 first 1
 second 1
 third 1`;
@@ -346,10 +347,10 @@ third 1`;
       
       // The simplified algorithm chooses the prefix pattern "start middle" 
       // which appears in 2 items, and doesn't apply overlapping patterns
-      const expected = `(1: start middle)
+      const expected = `1: start middle
 1 end
 1 finish
-(begin middle end)`;
+begin middle end`;
       
       const result = deduplicate(input, 1.0);
       expect(result).toBe(expected);
@@ -363,10 +364,10 @@ third 1`;
       
       // Algorithm will find suffix patterns "sat on mat" and "ran to park"
       // These are the longest common patterns with 2+ items each
-      const expected = `(1: sat on mat)
+      const expected = `1: sat on mat
 the cat 1
 the dog 1
-(2: ran to park)
+2: ran to park
 big cat 2
 big dog 2`;
       

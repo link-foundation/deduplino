@@ -52,26 +52,31 @@ describe("Lino Deduplicator", () => {
 (b)
 (b)`;
     
-    const result = deduplicate(input);
+    const expected = `(1: a)
+1
+1
+(b)
+(b)`;
     
-    // With 20% rule: 2 duplicated links, ceil(2 * 0.2) = 1, so only most frequent processed
-    expect(result).toContain("(1: a)");
-    expect(result).not.toContain("(2:");
+    const result = deduplicate(input);
+    expect(result).toBe(expected);
   });
 
-  test("should prioritize most frequent references", () => {
+  test("should prioritize most frequent references with default 20% threshold", () => {
     const input = `(frequent)
 (frequent)
 (frequent)
 (less)
 (less)`;
     
-    const result = deduplicate(input);
+    const expected = `(1: frequent)
+1
+1
+(less)
+(less)`;
     
-    // Most frequent should get reference 1
-    expect(result).toContain("(1: frequent)");
-    // With 20% rule and 2 duplicated links, ceil(2 * 0.2) = 1, so only most frequent processed
-    expect(result).not.toContain("(2:");
+    const result = deduplicate(input);
+    expect(result).toBe(expected);
   });
 
   test("should handle empty input", () => {

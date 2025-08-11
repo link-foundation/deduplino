@@ -4,19 +4,23 @@ A CLI tool for deduplicating [lino format](https://github.com/linksplatform/Prot
 
 ## Installation
 
-### From NPM (Recommended)
+### Using Bun (Recommended)
 
 ```bash
-npm install -g deduplino
-```
+# Install globally with bun
+bun install -g deduplino
 
-### From Source
-
-```bash
+# Or from source
 git clone <repository-url>
 cd deduplino
 bun install
 bun run build
+```
+
+### Using NPM (Fallback)
+
+```bash
+npm install -g deduplino
 ```
 
 ## Quick Start
@@ -223,7 +227,9 @@ Selected patterns are filtered to prevent overlap - each link content can only b
 
 ## License
 
-MIT
+This is free and unencumbered software released into the **public domain**.
+
+See [LICENSE](./LICENSE) for full details or visit <https://unlicense.org>
 
 ## Contributing
 

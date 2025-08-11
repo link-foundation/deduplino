@@ -18,8 +18,8 @@
     "deduplication",
     "cli"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "link-foundation",
+  "license": "Unlicense",
   "dependencies": {
     "@linksplatform/protocols-lino": "^0.0.3",
     "yargs": "^17.7.2"

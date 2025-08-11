@@ -11,7 +11,7 @@ describe("Lino Deduplicator", () => {
 1`;
     
     const result = deduplicate(input);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should handle three occurrences of pairs", () => {
@@ -25,14 +25,14 @@ describe("Lino Deduplicator", () => {
 1`;
     
     const result = deduplicate(input);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should handle single occurrence (no deduplication needed)", () => {
     const input = "(unique)";
     const expected = "unique";
     const result = deduplicate(input);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should handle multiple different pairs", () => {
@@ -46,7 +46,7 @@ third fourth
 1`;
     
     const result = deduplicate(input);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should not deduplicate single references", () => {
@@ -63,7 +63,7 @@ b
 b`;
     
     const result = deduplicate(input);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should handle pairs of references", () => {
@@ -81,18 +81,20 @@ other pair
 other pair`;
     
     const result = deduplicate(input);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should handle empty input", () => {
     const result = deduplicate("");
-    expect(result).toBe("");
+    expect(result.output).toBe("");
+    expect(result.success).toBe(false);
   });
 
   test("should handle input without parentheses", () => {
     const input = "no parentheses here";
     const result = deduplicate(input);
-    expect(result).toBe(input);
+    expect(result.output).toBe(input);
+    expect(result.success).toBe(false);
   });
 
   describe("Sequence extension patterns", () => {
@@ -105,7 +107,7 @@ other pair`;
 1 a link`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle 3-reference sequence", () => {
@@ -117,7 +119,7 @@ other pair`;
 1 link`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle 4-reference sequence with 3 occurrences", () => {
@@ -131,7 +133,7 @@ other pair`;
 1`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle 5-reference sequence", () => {
@@ -143,7 +145,7 @@ other pair`;
 1`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle 6-reference sequence", () => {
@@ -155,7 +157,7 @@ other pair`;
 1`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle 7-reference sequence", () => {
@@ -167,7 +169,7 @@ other pair`;
 1`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should find common prefixes", () => {
@@ -179,7 +181,7 @@ other pair`;
 1 tree`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle multiple prefix patterns", () => {
@@ -197,7 +199,7 @@ other pair`;
 1 different item`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
   });
 
@@ -211,7 +213,7 @@ other pair`;
 1 bar`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle longer prefixes", () => {
@@ -225,7 +227,7 @@ other pair`;
 1 sleeps`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle mixed prefix lengths", () => {
@@ -242,7 +244,7 @@ other pair`;
 2 reset`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should preserve order for prefix detection", () => {
@@ -259,7 +261,7 @@ other pair`;
 2 theta`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
   });
 
@@ -273,7 +275,7 @@ foo 1
 bar 1`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle longer suffixes", () => {
@@ -287,7 +289,7 @@ run 1
 walk 1`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle mixed suffix lengths", () => {
@@ -304,7 +306,7 @@ setup 2
 reset 2`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should preserve order for suffix detection", () => {
@@ -321,7 +323,7 @@ epsilon 2
 theta 2`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle suffix with single reference difference", () => {
@@ -335,7 +337,7 @@ second 1
 third 1`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
   });
 
@@ -353,7 +355,7 @@ third 1`;
 begin middle end`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
 
     test("should handle complex mixed patterns", () => {
@@ -372,7 +374,7 @@ big cat 2
 big dog 2`;
       
       const result = deduplicate(input, 1.0);
-      expect(result).toBe(expected);
+      expect(result.output).toBe(expected);
     });
   });
 });

@@ -2,7 +2,7 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { readFileSync, writeFileSync } from 'fs';
-import { deduplicate } from './deduplicator.js';
+import { deduplicate, DeduplicationResult } from './deduplicator.js';
 import { ParseError } from './errors.js';
 import { detectEdgeCases, analyzeEdgeCases } from './edge-cases-detector.js';
 import { extname, basename } from 'path';
@@ -114,14 +114,18 @@ async function main() {
     }
 
     // Process deduplication
-    const result = deduplicate(input, argv['deduplication-threshold'], argv['auto-escape'], argv['fail-on-parse-error']);
+    const result: DeduplicationResult = deduplicate(input, argv['deduplication-threshold'], argv['auto-escape'], argv['fail-on-parse-error']);
 
     // Write output
     if (outputFile) {
-      writeFileSync(outputFile, result, 'utf8');
-      console.error(`Deduplication complete. Output written to ${outputFile}`);
+      writeFileSync(outputFile, result.output, 'utf8');
+      if (result.success) {
+        console.error(`Deduplication complete. Applied ${result.patternsApplied} pattern(s). Output written to ${outputFile}`);
+      } else {
+        console.error(`\x1b[31mDeduplication failed: ${result.reason}. Original content written to ${outputFile}\x1b[0m`);
+      }
     } else {
-      process.stdout.write(result);
+      process.stdout.write(result.output);
     }
   } catch (error) {
     if (error instanceof ParseError) {

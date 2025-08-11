@@ -333,8 +333,15 @@ function autoEscape(input: string): string {
   }
 }
 
-export function deduplicate(input: string, topPercentage: number = 0.2, autoEscapeEnabled: boolean = false, failOnParseError: boolean = false): string {
-  if (!input.trim()) return input;
+export interface DeduplicationResult {
+  output: string;
+  success: boolean;
+  reason?: string;
+  patternsApplied: number;
+}
+
+export function deduplicate(input: string, topPercentage: number = 0.2, autoEscapeEnabled: boolean = false, failOnParseError: boolean = false): DeduplicationResult {
+  if (!input.trim()) return { output: input, success: false, reason: 'Empty input', patternsApplied: 0 };
   
   let processedInput = input;
   
@@ -353,7 +360,7 @@ export function deduplicate(input: string, topPercentage: number = 0.2, autoEsca
     if (failOnParseError) {
       throw new ParseError();
     }
-    return processedInput; // Return processed input if parsing fails
+    return { output: processedInput, success: false, reason: 'Parsing failed', patternsApplied: 0 };
   }
   
   // Find and apply patterns
@@ -362,9 +369,9 @@ export function deduplicate(input: string, topPercentage: number = 0.2, autoEsca
   
   // Return formatted version if no patterns selected
   if (selectedPatterns.length === 0) {
-    return formatLinks(links, true);
+    return { output: formatLinks(links, true), success: false, reason: 'No deduplication patterns found', patternsApplied: 0 };
   }
   
   const deduplicatedLinks = applyPatterns(links, selectedPatterns);
-  return formatLinks(deduplicatedLinks, true);
+  return { output: formatLinks(deduplicatedLinks, true), success: true, patternsApplied: selectedPatterns.length };
 }

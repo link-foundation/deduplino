@@ -9,7 +9,7 @@ describe("Auto-escape functionality", () => {
     const expected = `'2025-07-25T21:32:46Z' updateCompletionTokens token`;
     
     const result = deduplicate(input, 0.2, true);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should escape URL-like references with colons", () => {
@@ -18,7 +18,7 @@ describe("Auto-escape functionality", () => {
     const expected = `error: connection failed at 'server:8080'`;
     
     const result = deduplicate(input, 0.2, true);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should escape problematic parentheses references", () => {
@@ -27,7 +27,7 @@ describe("Auto-escape functionality", () => {
     const expected = `'(broken' reference {`;
     
     const result = deduplicate(input, 0.2, true);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should handle mixed quoting styles elegantly", () => {
@@ -37,7 +37,7 @@ describe("Auto-escape functionality", () => {
     const expected = `'already quoted' normal 'double quoted' 'time:' '2025-01-01T10:30:00Z'`;
     
     const result = deduplicate(input, 0.2, true);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should preserve simple punctuation", () => {
@@ -46,7 +46,7 @@ describe("Auto-escape functionality", () => {
     const expected = `{ 'name:' test }`;
     
     const result = deduplicate(input, 0.2, true);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should process multi-line log format with deduplication", () => {
@@ -61,14 +61,14 @@ describe("Auto-escape functionality", () => {
 1 }`;
 
     const result = deduplicate(input, 0.2, true);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should not auto-escape when option is disabled", () => {
     const input = `2025-07-25T21:32:46Z updateCompletionTokens`;
     
     const result = deduplicate(input, 0.2, false);
-    expect(result).toBe(input);
+    expect(result.output).toBe(input);
   });
 });
 
@@ -102,7 +102,7 @@ describe("Auto-escape failure cases", () => {
     const expected = `'2025-07-23T16:31:58.155042604Z' 'targetModel:' 'deepseek/deepseek-chat-v3-0324:free' ,`;
     
     const result = deduplicate(input, 0.2, true, false);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should handle quoted model names with slashes and trailing comma (now fixed)", () => {
@@ -110,22 +110,22 @@ describe("Auto-escape failure cases", () => {
     const expected = `'model:' 'deepseek/deepseek-chat-v3-0324:free' ,`;
     
     const result = deduplicate(input, 0.2, true, false);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should show what auto-escape does to complex cases", () => {
     // These cases actually get fixed by auto-escape aggressive fallback
     const input1 = `(unclosed (nested structure`;
     const result1 = deduplicate(input1, 0.2, true, false);
-    expect(result1).toBe("'(unclosed' '(nested' structure");
+    expect(result1.output).toBe("'(unclosed' '(nested' structure");
     
     const input2 = `(mixed ] bracket types)`;
     const result2 = deduplicate(input2, 0.2, true, false);
-    expect(result2).toBe("mixed ] bracket types");
+    expect(result2.output).toBe("mixed ] bracket types");
     
     const input3 = `(level1 (level2 (level3 missing close`;
     const result3 = deduplicate(input3, 0.2, true, false);
-    expect(result3).toBe("'(level1' '(level2' '(level3' missing close");
+    expect(result3.output).toBe("'(level1' '(level2' '(level3' missing close");
   });
 
   test("should handle special characters that need escaping", () => {
@@ -133,7 +133,7 @@ describe("Auto-escape failure cases", () => {
     const expected = `'file@host.com:port' user#123 path/to/file`;
     
     const result = deduplicate(input, 0.2, true, false);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should handle mixed content with parentheses and colons", () => {
@@ -141,7 +141,7 @@ describe("Auto-escape failure cases", () => {
     const expected = `'process(id):' value 'time:now' status`;
     
     const result = deduplicate(input, 0.2, true, false);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 
   test("should preserve valid lino structure when auto-escape is enabled", () => {
@@ -149,6 +149,6 @@ describe("Auto-escape failure cases", () => {
     const expected = `(valid structure) normal content`;
     
     const result = deduplicate(input, 0.2, true, false);
-    expect(result).toBe(expected);
+    expect(result.output).toBe(expected);
   });
 });

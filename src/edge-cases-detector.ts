@@ -57,6 +57,8 @@ export function analyzeEdgeCases(edgeCases: EdgeCase[]): void {
       pattern = 'Mismatched Brackets';
     } else if (edgeCase.originalLine.includes('((') && !edgeCase.originalLine.includes('))')) {
       pattern = 'Nested Unclosed';
+    } else if (edgeCase.originalLine.includes("'") && edgeCase.originalLine.endsWith(',')) {
+      pattern = 'Quoted Content with Trailing Comma';
     }
     
     if (!patterns.has(pattern)) {

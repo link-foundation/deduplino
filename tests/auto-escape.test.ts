@@ -97,6 +97,22 @@ describe("Auto-escape failure cases", () => {
     }).toThrow(ParseError);
   });
 
+  test("should handle quoted content with trailing comma (now fixed)", () => {
+    const input = `2025-07-23T16:31:58.155042604Z   targetModel: 'deepseek/deepseek-chat-v3-0324:free',`;
+    const expected = `'2025-07-23T16:31:58.155042604Z' 'targetModel:' 'deepseek/deepseek-chat-v3-0324:free' ,`;
+    
+    const result = deduplicate(input, 0.2, true, false);
+    expect(result).toBe(expected);
+  });
+
+  test("should handle quoted model names with slashes and trailing comma (now fixed)", () => {
+    const input = `model: 'deepseek/deepseek-chat-v3-0324:free',`;
+    const expected = `'model:' 'deepseek/deepseek-chat-v3-0324:free' ,`;
+    
+    const result = deduplicate(input, 0.2, true, false);
+    expect(result).toBe(expected);
+  });
+
   test("should show what auto-escape does to complex cases", () => {
     // These cases actually get fixed by auto-escape aggressive fallback
     const input1 = `(unclosed (nested structure`;

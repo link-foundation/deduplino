@@ -289,9 +289,9 @@ function autoEscape(input: string): string {
     const processedLines = lines.map(line => {
       const references = line.split(/\s+/).filter(reference => reference.length > 0);
       return references.map(reference => {
-        // Skip references that are already quoted
-        if ((reference.startsWith("'") && reference.endsWith("'")) || 
-            (reference.startsWith('"') && reference.endsWith('"'))) {
+        // Skip references that are already quoted (including those with trailing punctuation)
+        if ((reference.startsWith("'") && (reference.endsWith("'") || /^'.*'[,;.]$/.test(reference))) || 
+            (reference.startsWith('"') && (reference.endsWith('"') || /^".*"[,;.]$/.test(reference)))) {
           return reference;
         }
         

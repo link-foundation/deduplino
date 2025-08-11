@@ -6,6 +6,16 @@ function findCommonPrefix(str1: string, str2: string): string {
   return str1.substring(0, i);
 }
 
+function findCommonSuffix(str1: string, str2: string): string {
+  let i = 0;
+  const len1 = str1.length;
+  const len2 = str2.length;
+  while (i < len1 && i < len2 && str1[len1 - 1 - i] === str2[len2 - 1 - i]) {
+    i++;
+  }
+  return str1.substring(len1 - i);
+}
+
 function findLongestCommonPrefix(contents: string[]): string {
   if (contents.length === 0) return '';
   if (contents.length === 1) return contents[0];
@@ -24,6 +34,38 @@ function findLongestCommonPrefix(contents: string[]): string {
   }
   
   return prefix;
+}
+
+function findLongestCommonSuffix(contents: string[]): string {
+  if (contents.length === 0) return '';
+  if (contents.length === 1) return contents[0];
+  
+  let suffix = contents[0];
+  for (let i = 1; i < contents.length; i++) {
+    suffix = findCommonSuffix(suffix, contents[i]);
+    if (suffix === '') break;
+  }
+  
+  // Ensure we break at word boundaries - trim any partial word at the beginning
+  if (suffix.length > 0) {
+    // Check if suffix starts with a space (which means we have complete words)
+    if (!suffix.startsWith(' ')) {
+      // Find the first space to ensure we start at a word boundary
+      const firstSpace = suffix.indexOf(' ');
+      if (firstSpace > 0) {
+        // Keep everything after the first space
+        suffix = suffix.substring(firstSpace + 1);
+      } else {
+        // No space found, so this is just a partial word
+        return '';
+      }
+    } else {
+      // Remove leading space
+      suffix = suffix.substring(1);
+    }
+  }
+  
+  return suffix;
 }
 
 export function deduplicate(input: string, topPercentage: number = 0.2): string {
@@ -98,25 +140,43 @@ export function deduplicate(input: string, topPercentage: number = 0.2): string 
     return result;
   }
 
-  // Second pass: prefix detection for non-exact matches
+  // Second pass: prefix and suffix detection for non-exact matches
   // Only consider content with 2+ references
   const contents = allMatches
     .map(match => match[0].slice(1, -1)) // Remove parentheses
     .filter(content => content.trim().split(/\s+/).length >= 2); // Only 2+ references
   
   const prefixGroups = new Map<string, string[]>();
+  const suffixGroups = new Map<string, string[]>();
 
   // Group by common prefixes - find pairwise prefixes first
   const pairwisePrefixes = new Map<string, string[]>();
+  const pairwiseSuffixes = new Map<string, string[]>();
   
   for (let i = 0; i < contents.length; i++) {
     for (let j = i + 1; j < contents.length; j++) {
+      // Check for prefix
       const prefix = findLongestCommonPrefix([contents[i], contents[j]]);
       if (prefix.length > 0 && prefix.includes(' ')) { // Only meaningful prefixes with spaces
         if (!pairwisePrefixes.has(prefix)) {
           pairwisePrefixes.set(prefix, []);
         }
         const group = pairwisePrefixes.get(prefix)!;
+        if (!group.includes(contents[i])) {
+          group.push(contents[i]);
+        }
+        if (!group.includes(contents[j])) {
+          group.push(contents[j]);
+        }
+      }
+      
+      // Check for suffix
+      const suffix = findLongestCommonSuffix([contents[i], contents[j]]);
+      if (suffix.length > 0 && suffix.includes(' ')) { // Only meaningful suffixes with spaces
+        if (!pairwiseSuffixes.has(suffix)) {
+          pairwiseSuffixes.set(suffix, []);
+        }
+        const group = pairwiseSuffixes.get(suffix)!;
         if (!group.includes(contents[i])) {
           group.push(contents[i]);
         }
@@ -148,12 +208,58 @@ export function deduplicate(input: string, topPercentage: number = 0.2): string 
       }
     }
   }
+  
+  // Now consolidate suffixes - prefer longer, more specific suffixes
+  const sortedSuffixes = Array.from(pairwiseSuffixes.entries())
+    .sort((a, b) => b[0].length - a[0].length);
 
-  // Find the best prefix groups (with ≥2 items)
-  const validGroups = Array.from(prefixGroups.entries())
-    .filter(([prefix, items]) => items.length >= 2)
+  for (const [suffix, items] of sortedSuffixes) {
+    if (items.length >= 2) {
+      // Only add if no items are already covered by a longer suffix
+      const alreadyCovered = items.some(item => {
+        for (const [existingSuffix] of suffixGroups) {
+          if (existingSuffix.length > suffix.length && item.endsWith(existingSuffix)) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      if (!alreadyCovered) {
+        suffixGroups.set(suffix, items);
+      }
+    }
+  }
+
+  // Combine prefix and suffix groups, choosing the best pattern for each set of items
+  const allGroups: Array<[string, string[], 'prefix' | 'suffix']> = [];
+  
+  // Add prefix groups
+  for (const [prefix, items] of prefixGroups) {
+    if (items.length >= 2) {
+      allGroups.push([prefix, items, 'prefix']);
+    }
+  }
+  
+  // Add suffix groups
+  for (const [suffix, items] of suffixGroups) {
+    if (items.length >= 2) {
+      // Check if these items are already covered by a prefix group
+      const coveredByPrefix = allGroups.some(([pattern, groupItems, type]) => 
+        type === 'prefix' && 
+        items.every(item => groupItems.includes(item))
+      );
+      
+      if (!coveredByPrefix) {
+        allGroups.push([suffix, items, 'suffix']);
+      }
+    }
+  }
+  
+  // Sort all groups by effectiveness (frequency * pattern length)
+  const validGroups = allGroups
     .sort((a, b) => {
-      // Sort by frequency first, then by prefix length
+      // Sort by frequency first, then by pattern length
       if (b[1].length !== a[1].length) {
         return b[1].length - a[1].length;
       }
@@ -162,12 +268,12 @@ export function deduplicate(input: string, topPercentage: number = 0.2): string 
 
   if (validGroups.length === 0) return input;
 
-  // Take top percentage of prefix groups
+  // Take top percentage of groups
   const topCount = Math.max(1, Math.ceil(validGroups.length * topPercentage));
   const groupsToProcess = validGroups.slice(0, topCount);
 
   // Create reference mapping and process - assign numbers based on order of appearance in input
-  const referenceMap = new Map<string, { refNum: number; prefix: string }>();
+  const referenceMap = new Map<string, { refNum: number; pattern: string; type: 'prefix' | 'suffix' }>();
   let nextRefNum = 1;
   
   // Process groups in order of appearance in the input
@@ -175,12 +281,12 @@ export function deduplicate(input: string, topPercentage: number = 0.2): string 
     const content = match[0];
     const innerContent = content.slice(1, -1);
     
-    for (const [prefix, items] of groupsToProcess) {
+    for (const [pattern, items, type] of groupsToProcess) {
       if (items.includes(innerContent) && !referenceMap.has(content)) {
-        // Find or assign reference number for this prefix
+        // Find or assign reference number for this pattern
         let refNum = nextRefNum;
         for (const [existingContent, existingData] of referenceMap) {
-          if (existingData.prefix === prefix) {
+          if (existingData.pattern === pattern && existingData.type === type) {
             refNum = existingData.refNum;
             break;
           }
@@ -190,54 +296,62 @@ export function deduplicate(input: string, topPercentage: number = 0.2): string 
           nextRefNum++;
         }
         
-        referenceMap.set(content, { refNum, prefix });
+        referenceMap.set(content, { refNum, pattern, type });
       }
     }
   }
 
-  // Create a mapping to track which prefix should get which reference number
-  const prefixToRefNum = new Map<string, number>();
-  groupsToProcess.forEach(([prefix], index) => {
-    prefixToRefNum.set(prefix, index + 1);
+  // Create a mapping to track which pattern should get which reference number
+  const patternToRefNum = new Map<string, number>();
+  groupsToProcess.forEach(([pattern], index) => {
+    patternToRefNum.set(pattern, index + 1);
   });
 
   let result = input;
-  const processedPrefixes = new Set<string>();
+  const processedPatterns = new Set<string>();
   
   for (let i = 0; i < allMatches.length; i++) {
     const match = allMatches[i];
     const content = match[0];
     
     if (referenceMap.has(content)) {
-      const { refNum, prefix } = referenceMap.get(content)!;
+      const { refNum, pattern, type } = referenceMap.get(content)!;
       const start = match.index!;
       const end = start + content.length;
       const innerContent = content.slice(1, -1);
-      const suffix = innerContent.substring(prefix.length).trim();
       
-      // Check if this is the first occurrence of this prefix
-      const isFirstWithPrefix = !processedPrefixes.has(prefix);
+      let replacement: string;
+      const patternKey = `${type}:${pattern}`;
+      const isFirstWithPattern = !processedPatterns.has(patternKey);
       
-      if (isFirstWithPrefix) {
-        processedPrefixes.add(prefix);
-        const definition = `(${refNum}: ${prefix})`;
-        const replacement = suffix ? `${definition}\n${refNum} ${suffix}` : definition;
-        result = result.substring(0, start) + replacement + result.substring(start + content.length);
+      if (type === 'prefix') {
+        const suffix = innerContent.substring(pattern.length).trim();
         
-        // Update positions for subsequent matches
-        const lengthDiff = replacement.length - content.length;
-        for (let j = i + 1; j < allMatches.length; j++) {
-          allMatches[j].index! += lengthDiff;
+        if (isFirstWithPattern) {
+          processedPatterns.add(patternKey);
+          const definition = `(${refNum}: ${pattern})`;
+          replacement = suffix ? `${definition}\n${refNum} ${suffix}` : definition;
+        } else {
+          replacement = suffix ? `${refNum} ${suffix}` : refNum.toString();
         }
-      } else {
-        const replacement = suffix ? `${refNum} ${suffix}` : refNum.toString();
-        result = result.substring(0, start) + replacement + result.substring(start + content.length);
+      } else { // suffix
+        const prefix = innerContent.substring(0, innerContent.length - pattern.length).trim();
         
-        // Update positions for subsequent matches
-        const lengthDiff = replacement.length - content.length;
-        for (let j = i + 1; j < allMatches.length; j++) {
-          allMatches[j].index! += lengthDiff;
+        if (isFirstWithPattern) {
+          processedPatterns.add(patternKey);
+          const definition = `(${refNum}: ${pattern})`;
+          replacement = prefix ? `(${refNum}: ${pattern})\n${prefix} ${refNum}` : definition;
+        } else {
+          replacement = prefix ? `${prefix} ${refNum}` : refNum.toString();
         }
+      }
+      
+      result = result.substring(0, start) + replacement + result.substring(end);
+      
+      // Update positions for subsequent matches
+      const lengthDiff = replacement.length - content.length;
+      for (let j = i + 1; j < allMatches.length; j++) {
+        allMatches[j].index! += lengthDiff;
       }
     }
   }

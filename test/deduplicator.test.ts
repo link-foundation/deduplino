@@ -198,4 +198,183 @@ describe("Lino Deduplicator", () => {
       expect(result).toBe(expected);
     });
   });
+
+  describe("Prefix deduplication", () => {
+    test("should detect simple prefix pattern", () => {
+      const input = `(hello world foo)
+(hello world bar)`;
+      
+      const expected = `(1: hello world)
+1 foo
+1 bar`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+
+    test("should handle longer prefixes", () => {
+      const input = `(the quick brown fox jumps)
+(the quick brown fox runs)
+(the quick brown fox sleeps)`;
+      
+      const expected = `(1: the quick brown fox)
+1 jumps
+1 runs
+1 sleeps`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+
+    test("should handle mixed prefix lengths", () => {
+      const input = `(system config enable debug)
+(system config enable verbose)
+(system network setup)
+(system network reset)`;
+      
+      const expected = `(1: system config enable)
+1 debug
+1 verbose
+(2: system network)
+2 setup
+2 reset`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+
+    test("should preserve order for prefix detection", () => {
+      const input = `(alpha beta gamma)
+(alpha beta delta)
+(epsilon zeta eta)
+(epsilon zeta theta)`;
+      
+      const expected = `(1: alpha beta)
+1 gamma
+1 delta
+(2: epsilon zeta)
+2 eta
+2 theta`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+  });
+
+  describe("Suffix deduplication", () => {
+    test("should detect simple suffix pattern", () => {
+      const input = `(foo ends here)
+(bar ends here)`;
+      
+      const expected = `(1: ends here)
+foo 1
+bar 1`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+
+    test("should handle longer suffixes", () => {
+      const input = `(jump over the lazy dog)
+(run over the lazy dog)
+(walk over the lazy dog)`;
+      
+      const expected = `(1: over the lazy dog)
+jump 1
+run 1
+walk 1`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+
+    test("should handle mixed suffix lengths", () => {
+      const input = `(enable debug system config)
+(enable verbose system config)
+(setup system network)
+(reset system network)`;
+      
+      const expected = `(1: system config)
+enable debug 1
+enable verbose 1
+(2: system network)
+setup 2
+reset 2`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+
+    test("should preserve order for suffix detection", () => {
+      const input = `(alpha beta gamma)
+(delta beta gamma)
+(epsilon zeta eta)
+(theta zeta eta)`;
+      
+      const expected = `(1: beta gamma)
+alpha 1
+delta 1
+(2: zeta eta)
+epsilon 2
+theta 2`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+
+    test("should handle suffix with single word difference", () => {
+      const input = `(first word is important)
+(second word is important)
+(third word is important)`;
+      
+      const expected = `(1: word is important)
+first 1
+second 1
+third 1`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+  });
+
+  describe("Mixed prefix and suffix patterns", () => {
+    test("should prefer longer common sequences", () => {
+      const input = `(start middle end)
+(start middle finish)
+(begin middle end)`;
+      
+      // Algorithm will find both prefix and suffix patterns
+      // "start middle" is a prefix for first two
+      // "middle end" is a suffix pattern that appears in item 1 and 3
+      // Since we process in order and prefer patterns with higher frequency,
+      // we'll get both patterns applied
+      const expected = `(1: start middle)
+1 end
+1 finish
+(2: middle end)
+begin 2`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+
+    test("should handle complex mixed patterns", () => {
+      const input = `(the cat sat on mat)
+(the dog sat on mat)
+(big cat ran to park)
+(big dog ran to park)`;
+      
+      // Algorithm will find suffix patterns "sat on mat" and "ran to park"
+      // These are the longest common patterns with 2+ items each
+      const expected = `(1: sat on mat)
+the cat 1
+the dog 1
+(2: ran to park)
+big cat 2
+big dog 2`;
+      
+      const result = deduplicate(input, 1.0);
+      expect(result).toBe(expected);
+    });
+  });
 });

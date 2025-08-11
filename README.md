@@ -145,6 +145,7 @@ The tool handles complex nested structures and can identify patterns in structur
 | `--deduplication-threshold` | `-p` | Percentage of patterns to apply (0-1) | 0.2 |
 | `--auto-escape` | | Automatically escape input to make it valid lino format | false |
 | `--piped-input` | | Read from stdin (use when piping data) | false |
+| `--fail-on-parse-error` | | Exit with code 1 if input cannot be parsed as lino format | false |
 | `--help` | `-h` | Show help information | - |
 
 ## Examples
@@ -190,6 +191,19 @@ some-tool | deduplino --piped-input | other-tool
 
 # Multiple processing steps
 cat input.lino | deduplino --piped-input -p 0.3 | tee intermediate.lino | final-processor
+```
+
+### Error Handling and Validation
+```bash
+# Validate lino format - exit with code 1 if invalid
+deduplino --fail-on-parse-error -i document.lino
+
+# Auto-escape with validation - useful for CI/CD pipelines
+deduplino --auto-escape --fail-on-parse-error -i log.txt
+# This will attempt auto-escape, but fail if it still can't parse the result
+
+# Check if auto-escape worked properly
+echo "problematic: input" | deduplino --piped-input --auto-escape --fail-on-parse-error
 ```
 
 ## Pattern Selection Strategy

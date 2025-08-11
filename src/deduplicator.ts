@@ -1,4 +1,5 @@
 import { Parser, Link, formatLinks } from '@linksplatform/protocols-lino';
+import { ParseError } from './errors.js';
 
 interface Pattern {
   type: 'exact' | 'prefix' | 'suffix';
@@ -332,7 +333,7 @@ function autoEscape(input: string): string {
   }
 }
 
-export function deduplicate(input: string, topPercentage: number = 0.2, autoEscapeEnabled: boolean = false): string {
+export function deduplicate(input: string, topPercentage: number = 0.2, autoEscapeEnabled: boolean = false, failOnParseError: boolean = false): string {
   if (!input.trim()) return input;
   
   let processedInput = input;
@@ -349,6 +350,9 @@ export function deduplicate(input: string, topPercentage: number = 0.2, autoEsca
   try {
     links = parser.parse(processedInput);
   } catch (error) {
+    if (failOnParseError) {
+      throw new ParseError();
+    }
     return processedInput; // Return processed input if parsing fails
   }
   

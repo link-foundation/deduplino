@@ -3,6 +3,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { readFileSync, writeFileSync } from 'fs';
 import { deduplicate } from './deduplicator.js';
+import { ParseError } from './errors.js';
 
 const argv = await yargs(hideBin(process.argv))
   .usage('Usage: $0 [options]')
@@ -31,10 +32,16 @@ const argv = await yargs(hideBin(process.argv))
     type: 'boolean',
     default: false
   })
+  .option('fail-on-parse-error', {
+    description: 'Exit with code 1 if input cannot be parsed as lino format',
+    type: 'boolean',
+    default: false
+  })
   .example('$0 -i input.lino -o output.lino', 'Deduplicate input.lino and save to output.lino')
   .example('$0 --deduplication-threshold 0.5 < input.lino > output.lino', 'Process 50% most frequent links')
   .example('echo "(test)\n(test)" | $0 --piped-input', 'Process from stdin')
   .example('$0 --auto-escape -i log.txt', 'Auto-escape log file to make it valid lino format')
+  .example('$0 --fail-on-parse-error -i input.lino', 'Exit with error code 1 if input is invalid lino format')
   .help()
   .argv;
 
@@ -64,7 +71,7 @@ async function main() {
     }
 
     // Process deduplication
-    const result = deduplicate(input, argv['deduplication-threshold'], argv['auto-escape']);
+    const result = deduplicate(input, argv['deduplication-threshold'], argv['auto-escape'], argv['fail-on-parse-error']);
 
     // Write output
     if (argv.output) {
@@ -74,7 +81,11 @@ async function main() {
       process.stdout.write(result);
     }
   } catch (error) {
-    console.error('Error:', error instanceof Error ? error.message : String(error));
+    if (error instanceof ParseError) {
+      console.error(error.message);
+    } else {
+      console.error('Error:', error instanceof Error ? error.message : String(error));
+    }
     process.exit(1);
   }
 }

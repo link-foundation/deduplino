@@ -2,11 +2,11 @@ import { expect, test, describe } from "bun:test";
 import { deduplicate } from "../src/deduplicator";
 
 describe("Lino Deduplicator", () => {
-  test("should handle basic deduplication", () => {
-    const input = `(a link)
-(a link)`;
+  test("should handle basic deduplication of pairs", () => {
+    const input = `(first second)
+(first second)`;
     
-    const expected = `(1: a link)
+    const expected = `(1: first second)
 1
 1`;
     
@@ -14,12 +14,12 @@ describe("Lino Deduplicator", () => {
     expect(result).toBe(expected);
   });
 
-  test("should handle three occurrences", () => {
-    const input = `(a link)
-(a link)
-(a link)`;
+  test("should handle three occurrences of pairs", () => {
+    const input = `(first second)
+(first second)
+(first second)`;
     
-    const expected = `(1: a link)
+    const expected = `(1: first second)
 1
 1
 1`;
@@ -34,31 +34,30 @@ describe("Lino Deduplicator", () => {
     expect(result).toBe(input);
   });
 
-  test("should handle multiple different links", () => {
-    const input = `(first)
-(second)
-(first)`;
+  test("should handle multiple different pairs", () => {
+    const input = `(first second)
+(third fourth)
+(first second)`;
     
-    const expected = `(1: first)
+    const expected = `(1: first second)
 1
-(second)
+(third fourth)
 1`;
     
     const result = deduplicate(input);
     expect(result).toBe(expected);
   });
 
-  test("should handle two pairs of duplicates with different frequencies", () => {
+  test("should not deduplicate single references", () => {
     const input = `(a)
 (a)
 (a)
 (b)
 (b)`;
     
-    const expected = `(1: a)
-1
-1
-1
+    const expected = `(a)
+(a)
+(a)
 (b)
 (b)`;
     
@@ -66,19 +65,19 @@ describe("Lino Deduplicator", () => {
     expect(result).toBe(expected);
   });
 
-  test("should prioritize most frequent references with default 20% threshold", () => {
-    const input = `(frequent)
-(frequent)
-(frequent)
-(less)
-(less)`;
+  test("should handle pairs of references", () => {
+    const input = `(first second)
+(first second)
+(first second)
+(other pair)
+(other pair)`;
     
-    const expected = `(1: frequent)
+    const expected = `(1: first second)
 1
 1
 1
-(less)
-(less)`;
+(other pair)
+(other pair)`;
     
     const result = deduplicate(input);
     expect(result).toBe(expected);

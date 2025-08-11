@@ -47,9 +47,13 @@ export function deduplicate(input: string, topPercentage: number = 0.2): string 
     }
   });
 
-  // Find exact pairs
+  // Find exact pairs - only process content with 2+ references (words)
   const exactPairs = Array.from(exactCounts.entries())
-    .filter(([content, data]) => data.count >= 2);
+    .filter(([content, data]) => {
+      const innerContent = content.slice(1, -1); // Remove parentheses
+      const referenceCount = innerContent.trim().split(/\s+/).length;
+      return data.count >= 2 && referenceCount >= 2; // At least 2 occurrences AND at least 2 references
+    });
 
   if (exactPairs.length > 0) {
     // Handle exact duplicates first
@@ -95,7 +99,11 @@ export function deduplicate(input: string, topPercentage: number = 0.2): string 
   }
 
   // Second pass: prefix detection for non-exact matches
-  const contents = allMatches.map(match => match[0].slice(1, -1)); // Remove parentheses
+  // Only consider content with 2+ references
+  const contents = allMatches
+    .map(match => match[0].slice(1, -1)) // Remove parentheses
+    .filter(content => content.trim().split(/\s+/).length >= 2); // Only 2+ references
+  
   const prefixGroups = new Map<string, string[]>();
 
   // Group by common prefixes - find pairwise prefixes first

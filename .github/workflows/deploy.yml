@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'src/**'
-      - 'test/**'
+      - 'tests/**'
       - 'package.json'
       - 'bun.lock'
       - '.github/workflows/deploy.yml'
@@ -28,7 +28,7 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet HEAD~1 HEAD -- src/ test/ package.json bun.lock .github/workflows/deploy.yml; then
+          if git diff --quiet HEAD~1 HEAD -- src/ tests/ package.json bun.lock .github/workflows/deploy.yml; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT

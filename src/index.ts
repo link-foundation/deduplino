@@ -5,12 +5,17 @@ import { readFileSync, writeFileSync } from 'fs';
 import { deduplicate } from './deduplicator.js';
 import { ParseError } from './errors.js';
 import { detectEdgeCases, analyzeEdgeCases } from './edge-cases-detector.js';
+import { extname, basename } from 'path';
 
 const argv = await yargs(hideBin(process.argv))
-  .usage('Usage: $0 [options]')
+  .usage('Usage: $0 [input-file] [options]')
+  .positional('input-file', {
+    describe: 'Input file path',
+    type: 'string'
+  })
   .option('input', {
     alias: 'i',
-    description: 'Input file path (if not provided, reads from stdin)',
+    description: 'Input file path (alternative to positional argument)',
     type: 'string'
   })
   .option('output', {
@@ -43,7 +48,9 @@ const argv = await yargs(hideBin(process.argv))
     type: 'boolean',
     default: false
   })
-  .example('$0 -i input.lino -o output.lino', 'Deduplicate input.lino and save to output.lino')
+  .example('$0 input.lino', 'Deduplicate input.lino and save to input.deduped.lino')
+  .example('$0 input.lino -o output.lino', 'Deduplicate input.lino and save to output.lino')
+  .example('$0 -i input.lino -o output.lino', 'Alternative syntax using -i flag')
   .example('$0 --deduplication-threshold 0.5 < input.lino > output.lino', 'Process 50% most frequent links')
   .example('echo "(test)\n(test)" | $0 --piped-input', 'Process from stdin')
   .example('$0 --auto-escape -i log.txt', 'Auto-escape log file to make it valid lino format')
@@ -52,12 +59,33 @@ const argv = await yargs(hideBin(process.argv))
   .help()
   .argv;
 
+function generateOutputPath(inputPath: string): string {
+  const ext = extname(inputPath);
+  const base = basename(inputPath, ext);
+  const dir = inputPath.substring(0, inputPath.length - basename(inputPath).length);
+  
+  if (ext === '.lino') {
+    return `${dir}${base}.deduped.lino`;
+  } else {
+    return `${inputPath}.deduped.lino`;
+  }
+}
+
 async function main() {
   try {
-    // Read input
+    // Determine input source (positional argument takes precedence)
+    const inputFile = argv._[0] as string || argv.input;
     let input: string;
-    if (argv.input) {
-      input = readFileSync(argv.input, 'utf8');
+    let outputFile: string | undefined;
+    
+    if (inputFile) {
+      input = readFileSync(inputFile, 'utf8');
+      // Generate smart output path if output not specified
+      if (!argv.output) {
+        outputFile = generateOutputPath(inputFile);
+      } else {
+        outputFile = argv.output;
+      }
     } else if (argv['piped-input']) {
       // Read from stdin
       const chunks: Uint8Array[] = [];
@@ -65,8 +93,9 @@ async function main() {
         chunks.push(chunk);
       }
       input = Buffer.concat(chunks).toString('utf8');
+      outputFile = argv.output; // Could be undefined (stdout)
     } else {
-      console.error('Error: No input provided. Use --input to specify a file or --piped-input to read from stdin.');
+      console.error('Error: No input provided. Use a positional argument, --input to specify a file, or --piped-input to read from stdin.');
       console.error('Run with --help for usage information.');
       process.exit(1);
     }
@@ -88,9 +117,9 @@ async function main() {
     const result = deduplicate(input, argv['deduplication-threshold'], argv['auto-escape'], argv['fail-on-parse-error']);
 
     // Write output
-    if (argv.output) {
-      writeFileSync(argv.output, result, 'utf8');
-      console.error(`Deduplication complete. Output written to ${argv.output}`);
+    if (outputFile) {
+      writeFileSync(outputFile, result, 'utf8');
+      console.error(`Deduplication complete. Output written to ${outputFile}`);
     } else {
       process.stdout.write(result);
     }

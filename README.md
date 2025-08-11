@@ -140,8 +140,9 @@ The tool handles complex nested structures and can identify patterns in structur
 
 | Option | Short | Description | Default |
 |--------|--------|-------------|---------|
-| `--input` | `-i` | Input file path | - |
-| `--output` | `-o` | Output file path (stdout if not provided) | - |
+| `[input-file]` | | Input file as positional argument | - |
+| `--input` | `-i` | Input file path (alternative to positional argument) | - |
+| `--output` | `-o` | Output file path (smart naming if not provided) | - |
 | `--deduplication-threshold` | `-p` | Percentage of patterns to apply (0-1) | 0.2 |
 | `--auto-escape` | | Automatically escape input to make it valid lino format | false |
 | `--piped-input` | | Read from stdin (use when piping data) | false |
@@ -153,7 +154,14 @@ The tool handles complex nested structures and can identify patterns in structur
 
 ### Basic File Processing
 ```bash
-# Deduplicate a file
+# Deduplicate a file (smart output naming)
+deduplino document.lino
+# Creates document.deduped.lino
+
+# Deduplicate with custom output
+deduplino document.lino -o compressed.lino
+
+# Traditional flag syntax
 deduplino -i document.lino -o compressed.lino
 
 # Process from pipeline
@@ -163,10 +171,22 @@ cat document.lino | deduplino --piped-input > compressed.lino
 echo "(test)\n(test)" | deduplino --piped-input
 ```
 
+### Smart Output Naming
+When you don't specify an output file, deduplino automatically generates one:
+
+```bash
+# File with .lino extension
+deduplino input.lino           # → input.deduped.lino
+
+# File without .lino extension  
+deduplino server.log          # → server.log.deduped.lino
+deduplino data.txt            # → data.txt.deduped.lino
+```
+
 ### Threshold Control
 ```bash
 # Conservative (default) - top 20% of patterns
-deduplino -i document.lino
+deduplino document.lino
 
 # More aggressive - top 50% of patterns
 deduplino --deduplication-threshold 0.5 -i document.lino

@@ -44,14 +44,14 @@ Deduplino analyzes lino files to find patterns in link references and creates op
 
 The `--auto-escape` option automatically converts non-lino text (like logs) into valid lino format:
 
-1. **First attempt**: Escape only words containing colons (timestamps, URLs, field names)
-2. **Second attempt**: Escape tokens with special characters (`!@#$%^&*+=|\\:;?/<>.,`)
-3. **Final fallback**: Escape all tokens except simple punctuation and quoted strings
+1. **First attempt**: Escape only references containing colons (timestamps, URLs, field names)
+2. **Second attempt**: Escape references with special characters (`!@#$%^&*+=|\\:;?/<>.,`)
+3. **Final fallback**: Escape all references except simple punctuation and quoted strings
 
 **Example log processing:**
 ```
-Input:  2025-07-25T21:32:46Z updateTokens id: a43fad436d79
-Output: '2025-07-25T21:32:46Z' updateTokens 'id:' a43fad436d79
+Input:  2025-07-25T21:32:46Z updateReferences id: a43fad436d79
+Output: '2025-07-25T21:32:46Z' updateReferences 'id:' a43fad436d79
 ```
 
 ### Pattern Types
@@ -126,7 +126,7 @@ The tool handles complex nested structures and can identify patterns in structur
 ## Algorithm
 
 1. **Parse** input using the Protocols.Lino parser
-2. **Filter** links with 2+ words (deduplicatable content)
+2. **Filter** links with 2+ references (deduplicatable content)
 3. **Identify Patterns**:
    - Exact duplicates
    - Common prefixes between link pairs
@@ -236,7 +236,7 @@ tests/
 
 ### Pattern Finding
 - **Exact**: Map-based counting of identical content
-- **Prefix/Suffix**: Pairwise comparison with word-level matching
+- **Prefix/Suffix**: Pairwise comparison with reference-level matching
 - **Structured**: Special handling for nested link structures like `(this is) a link`
 
 ### Pattern Scoring

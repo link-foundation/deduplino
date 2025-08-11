@@ -7,7 +7,7 @@ interface Pattern {
   count: number;
 }
 
-function getLinkContent(link: Link): string {
+function linkToString(link: Link): string {
   // Simple links with just an id
   if (link.id && (!link.values || link.values.length === 0)) {
     return link.id;
@@ -31,32 +31,32 @@ function getLinkContent(link: Link): string {
   return link.id || '';
 }
 
-function findCommonPattern(words1: string[], words2: string[], type: 'prefix' | 'suffix'): string | null {
-  const len1 = words1.length;
-  const len2 = words2.length;
+function findCommonPattern(references1: string[], references2: string[], type: 'prefix' | 'suffix'): string | null {
+  const len1 = references1.length;
+  const len2 = references2.length;
   let matchLen = 0;
   
   if (type === 'prefix') {
     while (matchLen < Math.min(len1 - 1, len2 - 1) && 
-           words1[matchLen] === words2[matchLen]) {
+           references1[matchLen] === references2[matchLen]) {
       matchLen++;
     }
-    return matchLen > 0 ? words1.slice(0, matchLen).join(' ') : null;
+    return matchLen > 0 ? references1.slice(0, matchLen).join(' ') : null;
   } else {
     while (matchLen < Math.min(len1 - 1, len2 - 1) &&
-           words1[len1 - 1 - matchLen] === words2[len2 - 1 - matchLen]) {
+           references1[len1 - 1 - matchLen] === references2[len2 - 1 - matchLen]) {
       matchLen++;
     }
-    return matchLen > 0 ? words1.slice(-matchLen).join(' ') : null;
+    return matchLen > 0 ? references1.slice(-matchLen).join(' ') : null;
   }
 }
 
 function findPatterns(links: Link[]): Pattern[] {
   const patterns: Pattern[] = [];
   
-  // Filter links with deduplicatable content (2+ words)
+  // Filter links with deduplicatable content (2+ references)
   const validLinks = links.filter(link => {
-    const content = getLinkContent(link);
+    const content = linkToString(link);
     return content.split(/\s+/).length >= 2;
   });
   
@@ -69,14 +69,14 @@ function findPatterns(links: Link[]): Pattern[] {
   // Count exact duplicates
   const exactCounts = new Map<string, number>();
   validLinks.forEach(link => {
-    const key = getLinkContent(link);
+    const key = linkToString(link);
     exactCounts.set(key, (exactCounts.get(key) || 0) + 1);
   });
   
   // Structured duplicates should become prefix patterns
   const structuredDuplicates = new Set(
     structuredLinks
-      .map(getLinkContent)
+      .map(linkToString)
       .filter(content => (exactCounts.get(content) || 0) >= 2)
   );
   
@@ -98,17 +98,17 @@ function findPatterns(links: Link[]): Pattern[] {
   
   // Handle structured duplicates as prefix patterns
   structuredDuplicates.forEach(content => {
-    const matchingLinks = structuredLinks.filter(link => getLinkContent(link) === content);
+    const matchingLinks = structuredLinks.filter(link => linkToString(link) === content);
     if (matchingLinks.length >= 2 && matchingLinks[0].values?.length > 1) {
       const firstPart = matchingLinks[0].values[0];
-      const prefix = getLinkContent(firstPart);
+      const prefix = linkToString(firstPart);
       
       if (prefix) {
         if (!prefixMap.has(prefix)) {
           prefixMap.set(prefix, new Set());
         }
         matchingLinks.forEach(link => {
-          prefixMap.get(prefix)!.add(getLinkContent(link));
+          prefixMap.get(prefix)!.add(linkToString(link));
         });
       }
     }
@@ -121,16 +121,16 @@ function findPatterns(links: Link[]): Pattern[] {
     for (let j = i + 1; j < validLinks.length; j++) {
       if (structuredLinks.includes(validLinks[j])) continue;
       
-      const content1 = getLinkContent(validLinks[i]);
-      const content2 = getLinkContent(validLinks[j]);
+      const content1 = linkToString(validLinks[i]);
+      const content2 = linkToString(validLinks[j]);
       
       if (content1 === content2) continue;
       
-      const words1 = content1.split(/\s+/);
-      const words2 = content2.split(/\s+/);
+      const references1 = content1.split(/\s+/);
+      const references2 = content2.split(/\s+/);
       
       // Check for common prefix
-      const prefix = findCommonPattern(words1, words2, 'prefix');
+      const prefix = findCommonPattern(references1, references2, 'prefix');
       if (prefix) {
         if (!prefixMap.has(prefix)) {
           prefixMap.set(prefix, new Set());
@@ -140,7 +140,7 @@ function findPatterns(links: Link[]): Pattern[] {
       }
       
       // Check for common suffix
-      const suffix = findCommonPattern(words1, words2, 'suffix');
+      const suffix = findCommonPattern(references1, references2, 'suffix');
       if (suffix) {
         if (!suffixMap.has(suffix)) {
           suffixMap.set(suffix, new Set());
@@ -161,7 +161,7 @@ function findPatterns(links: Link[]): Pattern[] {
           pattern,
           items: itemArray,
           count: itemArray.reduce((sum, item) => 
-            sum + validLinks.filter(link => getLinkContent(link) === item).length, 0)
+            sum + validLinks.filter(link => linkToString(link) === item).length, 0)
         });
       }
     });
@@ -202,8 +202,8 @@ function selectBestPatterns(patterns: Pattern[], topPercentage: number): Pattern
   return selected;
 }
 
-function createReference(refId: number, words: string[]): Link {
-  const valueLinks = words.map(w => new Link(w, []));
+function createReference(refId: number, references: string[]): Link {
+  const valueLinks = references.map(reference => new Link(reference, []));
   return new Link(refId.toString(), valueLinks);
 }
 
@@ -228,7 +228,7 @@ function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
   const definedPatterns = new Set<number>();
   
   for (const link of links) {
-    const content = getLinkContent(link);
+    const content = linkToString(link);
     const replacement = replacements.get(content);
     
     if (!replacement) {
@@ -240,8 +240,8 @@ function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
     
     // Define reference if not already defined
     if (!definedPatterns.has(refId)) {
-      const words = pattern.pattern.split(/\s+/);
-      result.push(createReference(refId, words));
+      const references = pattern.pattern.split(/\s+/);
+      result.push(createReference(refId, references));
       definedPatterns.add(refId);
     }
     
@@ -253,16 +253,16 @@ function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
     } else if (pattern.type === 'prefix') {
       const suffix = content.substring(pattern.pattern.length).trim();
       if (suffix) {
-        const suffixLinks = suffix.split(/\s+/).map(w => new Link(w, []));
-        result.push(createCompoundLink([refLink, ...suffixLinks]));
+        const suffixReferences = suffix.split(/\s+/).map(reference => new Link(reference, []));
+        result.push(createCompoundLink([refLink, ...suffixReferences]));
       } else {
         result.push(refLink);
       }
     } else if (pattern.type === 'suffix') {
       const prefix = content.substring(0, content.length - pattern.pattern.length).trim();
       if (prefix) {
-        const prefixLinks = prefix.split(/\s+/).map(w => new Link(w, []));
-        result.push(createCompoundLink([...prefixLinks, refLink]));
+        const prefixReferences = prefix.split(/\s+/).map(reference => new Link(reference, []));
+        result.push(createCompoundLink([...prefixReferences, refLink]));
       } else {
         result.push(refLink);
       }
@@ -275,37 +275,37 @@ function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
 function autoEscape(input: string): string {
   const parser = new Parser();
   
-  // First, try escaping only words containing colons (like dates, URLs, etc.)
+  // First, try escaping only references containing colons (like dates, URLs, etc.)
   let escaped = input.replace(/\b([^\s'"()]+:[^\s'"()]*)\b/g, "'$1'");
   
   try {
     parser.parse(escaped);
     return escaped; // Success with minimal escaping
   } catch (error) {
-    // Second attempt: try escaping tokens that have problematic characters
-    // but preserve already quoted strings and simple tokens
+    // Second attempt: try escaping references that have problematic characters
+    // but preserve already quoted strings and simple references
     const lines = input.split('\n');
     const processedLines = lines.map(line => {
-      const tokens = line.split(/\s+/).filter(token => token.length > 0);
-      return tokens.map(token => {
-        // Skip tokens that are already quoted
-        if ((token.startsWith("'") && token.endsWith("'")) || 
-            (token.startsWith('"') && token.endsWith('"'))) {
-          return token;
+      const references = line.split(/\s+/).filter(reference => reference.length > 0);
+      return references.map(reference => {
+        // Skip references that are already quoted
+        if ((reference.startsWith("'") && reference.endsWith("'")) || 
+            (reference.startsWith('"') && reference.endsWith('"'))) {
+          return reference;
         }
         
         // Skip simple punctuation
-        if (/^[(){}[\],]+$/.test(token)) {
-          return token;
+        if (/^[(){}[\],]+$/.test(reference)) {
+          return reference;
         }
         
-        // Escape tokens with colons, or problematic parentheses combinations
-        if (token.includes(':') || /[()][a-zA-Z]|[a-zA-Z][()]/.test(token)) {
-          return `'${token}'`;
+        // Escape references with colons, or problematic parentheses combinations
+        if (reference.includes(':') || /[()][a-zA-Z]|[a-zA-Z][()]/.test(reference)) {
+          return `'${reference}'`;
         }
         
-        // Keep simple tokens as-is
-        return token;
+        // Keep simple references as-is
+        return reference;
       }).join(' ');
     });
     
@@ -317,15 +317,15 @@ function autoEscape(input: string): string {
     } catch (error2) {
       // Final fallback: escape everything by splitting on whitespace
       return lines.map(line => {
-        const tokens = line.split(/\s+/).filter(token => token.length > 0);
-        return tokens.map(token => {
-          // Don't escape tokens that are already quoted or are simple punctuation
-          if (token.startsWith("'") && token.endsWith("'")) return token;
-          if (token.startsWith('"') && token.endsWith('"')) return token;
-          if (/^[(){}[\],]+$/.test(token)) return token;
+        const references = line.split(/\s+/).filter(reference => reference.length > 0);
+        return references.map(reference => {
+          // Don't escape references that are already quoted or are simple punctuation
+          if (reference.startsWith("'") && reference.endsWith("'")) return reference;
+          if (reference.startsWith('"') && reference.endsWith('"')) return reference;
+          if (/^[(){}[\],]+$/.test(reference)) return reference;
           
           // Escape everything else
-          return `'${token}'`;
+          return `'${reference}'`;
         }).join(' ');
       }).join('\n');
     }

@@ -96,7 +96,7 @@ other pair`;
   });
 
   describe("Sequence extension patterns", () => {
-    test("should handle 2-word sequence", () => {
+    test("should handle 2-reference sequence", () => {
       const input = `(this is) a link
 (this is) a link`;
       
@@ -108,7 +108,7 @@ other pair`;
       expect(result).toBe(expected);
     });
 
-    test("should handle 3-word sequence", () => {
+    test("should handle 3-reference sequence", () => {
       const input = `(this is a) link
 (this is a) link`;
       
@@ -120,7 +120,7 @@ other pair`;
       expect(result).toBe(expected);
     });
 
-    test("should handle 4-word sequence with 3 occurrences", () => {
+    test("should handle 4-reference sequence with 3 occurrences", () => {
       const input = `(this is a link)
 (this is a link)
 (this is a link)`;
@@ -134,7 +134,7 @@ other pair`;
       expect(result).toBe(expected);
     });
 
-    test("should handle 5-word sequence", () => {
+    test("should handle 5-reference sequence", () => {
       const input = `(this is a long link)
 (this is a long link)`;
       
@@ -146,7 +146,7 @@ other pair`;
       expect(result).toBe(expected);
     });
 
-    test("should handle 6-word sequence", () => {
+    test("should handle 6-reference sequence", () => {
       const input = `(this is a very long link)
 (this is a very long link)`;
       
@@ -158,7 +158,7 @@ other pair`;
       expect(result).toBe(expected);
     });
 
-    test("should handle 7-word sequence", () => {
+    test("should handle 7-reference sequence", () => {
       const input = `(this is a really very long link)
 (this is a really very long link)`;
       
@@ -324,7 +324,7 @@ theta 2`;
       expect(result).toBe(expected);
     });
 
-    test("should handle suffix with single word difference", () => {
+    test("should handle suffix with single reference difference", () => {
       const input = `(first word is important)
 (second word is important)
 (third word is important)`;

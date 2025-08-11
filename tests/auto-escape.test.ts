@@ -11,7 +11,7 @@ describe("Auto-escape functionality", () => {
     expect(result).toBe(expected);
   });
 
-  test("should escape URL-like tokens with colons", () => {
+  test("should escape URL-like references with colons", () => {
     const input = `error: connection failed at server:8080`;
     
     const expected = `error: connection failed at 'server:8080'`;
@@ -20,10 +20,10 @@ describe("Auto-escape functionality", () => {
     expect(result).toBe(expected);
   });
 
-  test("should escape problematic parentheses tokens", () => {
-    const input = `(broken token {`;
+  test("should escape problematic parentheses references", () => {
+    const input = `(broken reference {`;
     
-    const expected = `'(broken' token {`;
+    const expected = `'(broken' reference {`;
     
     const result = deduplicate(input, 0.2, true);
     expect(result).toBe(expected);
@@ -32,7 +32,7 @@ describe("Auto-escape functionality", () => {
   test("should handle mixed quoting styles elegantly", () => {
     const input = `'already quoted' normal "double quoted" time: 2025-01-01T10:30:00Z`;
     
-    // Should preserve quotes and only escape colon tokens (lino normalizes to single quotes)
+    // Should preserve quotes and only escape colon references (lino normalizes to single quotes)
     const expected = `'already quoted' normal 'double quoted' 'time:' '2025-01-01T10:30:00Z'`;
     
     const result = deduplicate(input, 0.2, true);
@@ -49,13 +49,13 @@ describe("Auto-escape functionality", () => {
   });
 
   test("should process multi-line log format with deduplication", () => {
-    const input = `2025-07-25T21:32:46Z updateTokens token {
+    const input = `2025-07-25T21:32:46Z updateReferences reference {
 2025-07-25T21:32:46Z   id: a43fad436
 2025-07-25T21:32:46Z }`;
 
     // Auto-escape + deduplication creates patterns for repeated timestamps
     const expected = `1: '2025-07-25T21:32:46Z'
-1 updateTokens token {
+1 updateReferences reference {
 1 'id:' a43fad436
 1 }`;
 

@@ -7,6 +7,7 @@ describe("Lino Deduplicator", () => {
 (a link)`;
     
     const expected = `(1: a link)
+1
 1`;
     
     const result = deduplicate(input);
@@ -19,6 +20,7 @@ describe("Lino Deduplicator", () => {
 (a link)`;
     
     const expected = `(1: a link)
+1
 1
 1`;
     
@@ -38,6 +40,7 @@ describe("Lino Deduplicator", () => {
 (first)`;
     
     const expected = `(1: first)
+1
 (second)
 1`;
     
@@ -55,6 +58,7 @@ describe("Lino Deduplicator", () => {
     const expected = `(1: a)
 1
 1
+1
 (b)
 (b)`;
     
@@ -70,6 +74,7 @@ describe("Lino Deduplicator", () => {
 (less)`;
     
     const expected = `(1: frequent)
+1
 1
 1
 (less)
@@ -95,7 +100,8 @@ describe("Lino Deduplicator", () => {
       const input = `(this is) a link
 (this is) a link`;
       
-      const expected = `(1: this is) a link
+      const expected = `(1: this is)
+1 a link
 1 a link`;
       
       const result = deduplicate(input, 1.0);
@@ -106,7 +112,8 @@ describe("Lino Deduplicator", () => {
       const input = `(this is a) link
 (this is a) link`;
       
-      const expected = `(1: this is a) link
+      const expected = `(1: this is a)
+1 link
 1 link`;
       
       const result = deduplicate(input, 1.0);
@@ -120,6 +127,7 @@ describe("Lino Deduplicator", () => {
       
       const expected = `(1: this is a link)
 1
+1
 1`;
       
       const result = deduplicate(input, 1.0);
@@ -131,6 +139,7 @@ describe("Lino Deduplicator", () => {
 (this is a long link)`;
       
       const expected = `(1: this is a long link)
+1
 1`;
       
       const result = deduplicate(input, 1.0);
@@ -142,6 +151,7 @@ describe("Lino Deduplicator", () => {
 (this is a very long link)`;
       
       const expected = `(1: this is a very long link)
+1
 1`;
       
       const result = deduplicate(input, 1.0);
@@ -153,6 +163,7 @@ describe("Lino Deduplicator", () => {
 (this is a really very long link)`;
       
       const expected = `(1: this is a really very long link)
+1
 1`;
       
       const result = deduplicate(input, 1.0);

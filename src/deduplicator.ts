@@ -63,8 +63,16 @@ export function deduplicate(input: string, topPercentage: number = 0.2): string 
       referenceMap.set(content, index + 1);
     });
 
+    // First, add all definitions at the beginning
     let result = input;
+    const definitions: string[] = [];
     
+    pairsToProcess.forEach(([content], index) => {
+      const definition = `(${index + 1}: ${content.slice(1, -1)})`;
+      definitions.push(definition);
+    });
+    
+    // Replace all occurrences with reference numbers (in reverse order)
     for (let i = allMatches.length - 1; i >= 0; i--) {
       const match = allMatches[i];
       const content = match[0];
@@ -74,16 +82,15 @@ export function deduplicate(input: string, topPercentage: number = 0.2): string 
         const start = match.index!;
         const end = start + content.length;
         
-        const isFirstOccurrence = exactCounts.get(content)!.firstIndex === i;
-        
-        if (isFirstOccurrence) {
-          const definition = `(${refNumber}: ${content.slice(1, -1)})`;
-          result = result.substring(0, start) + definition + result.substring(end);
-        } else {
-          result = result.substring(0, start) + refNumber.toString() + result.substring(end);
-        }
+        result = result.substring(0, start) + refNumber.toString() + result.substring(end);
       }
     }
+    
+    // Prepend definitions
+    if (definitions.length > 0) {
+      result = definitions.join('\n') + '\n' + result;
+    }
+    
     return result;
   }
 

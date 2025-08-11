@@ -146,7 +146,7 @@ The tool handles complex nested structures and can identify patterns in structur
 | `--auto-escape` | | Automatically escape input to make it valid lino format | false |
 | `--piped-input` | | Read from stdin (use when piping data) | false |
 | `--fail-on-parse-error` | | Exit with code 1 if input cannot be parsed as lino format | false |
-| `--detect-edge-cases` | | Analyze log file line-by-line to find cases that auto-escape cannot fix | false |
+| `--detect-auto-escape-edge-cases` | | Analyze log file line-by-line to find cases that auto-escape cannot fix | false |
 | `--help` | `-h` | Show help information | - |
 
 ## Examples
@@ -210,10 +210,10 @@ echo "problematic: input" | deduplino --piped-input --auto-escape --fail-on-pars
 ### Edge Case Detection and Analysis
 ```bash
 # Analyze a log file to find problematic lines
-deduplino --detect-edge-cases -i server.log
+deduplino --detect-auto-escape-edge-cases -i server.log
 
 # Find edge cases in piped input
-cat application.log | deduplino --piped-input --detect-edge-cases
+cat application.log | deduplino --piped-input --detect-auto-escape-edge-cases
 
 # Example output:
 # 🔍 Found 3 edge case(s) that auto-escape cannot fix:

@@ -38,7 +38,7 @@ const argv = await yargs(hideBin(process.argv))
     type: 'boolean',
     default: false
   })
-  .option('detect-edge-cases', {
+  .option('detect-auto-escape-edge-cases', {
     description: 'Analyze log file line-by-line to find cases that auto-escape cannot fix',
     type: 'boolean',
     default: false
@@ -48,7 +48,7 @@ const argv = await yargs(hideBin(process.argv))
   .example('echo "(test)\n(test)" | $0 --piped-input', 'Process from stdin')
   .example('$0 --auto-escape -i log.txt', 'Auto-escape log file to make it valid lino format')
   .example('$0 --fail-on-parse-error -i input.lino', 'Exit with error code 1 if input is invalid lino format')
-  .example('$0 --detect-edge-cases -i server.log', 'Find log lines that auto-escape cannot fix')
+  .example('$0 --detect-auto-escape-edge-cases -i server.log', 'Find log lines that auto-escape cannot fix')
   .help()
   .argv;
 
@@ -72,7 +72,7 @@ async function main() {
     }
 
     // Handle edge case detection mode
-    if (argv['detect-edge-cases']) {
+    if (argv['detect-auto-escape-edge-cases']) {
       const edgeCases = detectEdgeCases(input);
       analyzeEdgeCases(edgeCases);
       return;

@@ -1,8 +1,16 @@
 # Deduplino
 
-A CLI tool for deduplicating lino format files by replacing repeated link references with numbered references.
+A CLI tool for deduplicating [lino format](https://github.com/linksplatform/Protocols.Lino) files by identifying patterns in repeated link references and replacing them with numbered references for improved readability and reduced file size.
 
 ## Installation
+
+### From NPM (Recommended)
+
+```bash
+npm install -g deduplino
+```
+
+### From Source
 
 ```bash
 git clone <repository-url>
@@ -11,91 +19,221 @@ bun install
 bun run build
 ```
 
-## Usage
+## Quick Start
 
 ```bash
 # Basic usage
-./dist/index.js -i input.lino -o output.lino
+deduplino -i input.lino -o output.lino
 
 # From stdin to stdout
-echo "(test link)\n(test link)" | ./dist/index.js
+echo "(test link)\n(test link)" | deduplino
 
-# Process 50% most frequent links instead of default 20%
-./dist/index.js --deduplication-threshold 0.5 -i input.lino
-
-# Help
-./dist/index.js --help
+# Process with different threshold
+deduplino --deduplication-threshold 0.5 -i input.lino
 ```
 
-## How it works
+## How It Works
 
-Deduplino identifies repeated link references and replaces them with numbered references:
+Deduplino analyzes lino files to find patterns in link references and creates optimized representations using three pattern types:
 
-### Basic Example
+### 1. Exact Duplicates
+Links that appear identically multiple times.
 
 **Input:**
 ```
-(a link that appears multiple times)
-(a link that appears multiple times)
-(a link that appears multiple times)
+(first second)
+(first second)
+(first second)
 ```
 
 **Output:**
 ```
-(1: a link that appears multiple times)
+1: first second
+1
 1
 1
 ```
 
-### Algorithm
+### 2. Prefix Patterns
+Links that share common beginnings.
 
-1. **Frequency Analysis**: Counts how often each link appears
-2. **Smart Selection**: Only processes the most frequent links (default: top 20%)
-3. **Reference Creation**: First occurrence becomes `(N: content)`, subsequent ones become `N`
-4. **80/20 Rule**: Process 20% of most frequent links for 80% of the deduplication benefit
+**Input:**
+```
+(this is a link of cat)
+(this is a link of tree)
+```
 
-### Why the threshold?
+**Output:**
+```
+1: this is a link of
+1 cat
+1 tree
+```
 
-The `--deduplication-threshold` parameter (default 0.2 = 20%) ensures:
-- **Readability**: Doesn't over-deduplicate less common links
-- **Impact**: Focuses on links that appear most often
-- **Balance**: Maximum space savings with minimal readability loss
+### 3. Suffix Patterns
+Links that share common endings.
+
+**Input:**
+```
+(foo ends here)
+(bar ends here)
+```
+
+**Output:**
+```
+1: ends here
+foo 1
+bar 1
+```
+
+### Advanced Pattern Detection
+
+The tool handles complex nested structures and can identify patterns in structured links:
+
+**Input:**
+```
+(this is) a link
+(this is) a link
+```
+
+**Output:**
+```
+1: this is
+1 a link
+1 a link
+```
+
+## Algorithm
+
+1. **Parse** input using the Protocols.Lino parser
+2. **Filter** links with 2+ words (deduplicatable content)
+3. **Identify Patterns**:
+   - Exact duplicates
+   - Common prefixes between link pairs
+   - Common suffixes between link pairs
+   - Special handling for structured links
+4. **Score & Select** patterns by (frequency × pattern_length)
+5. **Apply** top patterns based on threshold
+6. **Format** output using library's formatLinks function
 
 ## CLI Options
 
-- `-i, --input`: Input file path (reads from stdin if not provided)
-- `-o, --output`: Output file path (writes to stdout if not provided)  
-- `--deduplication-threshold`: Percentage of most frequent links to deduplicate (0-1, default: 0.2)
+| Option | Short | Description | Default |
+|--------|--------|-------------|---------|
+| `--input` | `-i` | Input file path (stdin if not provided) | - |
+| `--output` | `-o` | Output file path (stdout if not provided) | - |
+| `--deduplication-threshold` | `-p` | Percentage of patterns to apply (0-1) | 0.2 |
+| `--help` | `-h` | Show help information | - |
 
 ## Examples
 
+### Basic File Processing
 ```bash
 # Deduplicate a file
-./dist/index.js -i document.lino -o compressed.lino
+deduplino -i document.lino -o compressed.lino
 
 # Process from pipeline
-cat document.lino | ./dist/index.js > compressed.lino
-
-# Be more aggressive (process top 50% of frequent links)
-./dist/index.js --deduplication-threshold 0.5 -i document.lino
-
-# Process all duplicated links
-./dist/index.js --deduplication-threshold 1.0 -i document.lino
+cat document.lino | deduplino > compressed.lino
 ```
+
+### Threshold Control
+```bash
+# Conservative (default) - top 20% of patterns
+deduplino -i document.lino
+
+# More aggressive - top 50% of patterns
+deduplino --deduplication-threshold 0.5 -i document.lino
+
+# Maximum deduplication - all patterns
+deduplino --deduplication-threshold 1.0 -i document.lino
+```
+
+### Pipeline Usage
+```bash
+# Chain with other tools
+some-tool | deduplino | other-tool
+
+# Multiple processing steps
+cat input.lino | deduplino -p 0.3 | tee intermediate.lino | final-processor
+```
+
+## Pattern Selection Strategy
+
+The `--deduplication-threshold` parameter controls which patterns are applied:
+
+- **0.2 (default)**: Apply top 20% of patterns for optimal readability/compression balance
+- **0.5**: More aggressive deduplication, may impact readability
+- **1.0**: Maximum deduplication, applies all found patterns
+
+Patterns are ranked by: `frequency × pattern_length`
 
 ## Development
 
+### Setup
 ```bash
-# Run tests
+bun install
+```
+
+### Testing
+```bash
+# Run all tests
 bun test
 
-# Build
+# Watch mode
+bun test --watch
+```
+
+### Building
+```bash
+# Build for production
 bun run build
 
-# Development mode
+# Development mode with file watching
 bun run dev
 ```
+
+### Project Structure
+```
+src/
+├── index.ts          # CLI interface and argument parsing
+├── deduplicator.ts   # Core deduplication algorithm
+tests/
+└── deduplicator.test.ts  # Comprehensive test suite (27 tests)
+```
+
+## Algorithm Details
+
+### Pattern Finding
+- **Exact**: Map-based counting of identical content
+- **Prefix/Suffix**: Pairwise comparison with word-level matching
+- **Structured**: Special handling for nested link structures like `(this is) a link`
+
+### Pattern Scoring
+Patterns are scored by `count × pattern.split(' ').length` to favor:
+- High-frequency patterns (appear many times)  
+- Longer patterns (more compression benefit)
+
+### Overlap Prevention
+Selected patterns are filtered to prevent overlap - each link content can only be part of one pattern.
+
+## Dependencies
+
+- **[@linksplatform/protocols-lino](https://www.npmjs.com/package/@linksplatform/protocols-lino)**: Lino format parsing and formatting
+- **[yargs](https://www.npmjs.com/package/yargs)**: Command-line argument parsing
 
 ## License
 
 MIT
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass: `bun test`
+5. Submit a pull request
+
+## Links
+
+- [Lino Protocol Specification](https://github.com/linksplatform/Protocols.Lino)
+- [NPM Package](https://www.npmjs.com/package/deduplino)

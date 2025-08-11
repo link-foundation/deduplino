@@ -21,9 +21,15 @@ const argv = await yargs(hideBin(process.argv))
     type: 'number',
     default: 0.2
   })
+  .option('auto-escape', {
+    description: 'Automatically escape input to make it valid lino format',
+    type: 'boolean',
+    default: false
+  })
   .example('$0 -i input.lino -o output.lino', 'Deduplicate input.lino and save to output.lino')
   .example('$0 --deduplication-threshold 0.5 < input.lino > output.lino', 'Process 50% most frequent links')
   .example('echo "(test)\n(test)" | $0', 'Process from stdin')
+  .example('$0 --auto-escape -i log.txt', 'Auto-escape log file to make it valid lino format')
   .help()
   .argv;
 
@@ -49,7 +55,7 @@ async function main() {
     }
 
     // Process deduplication
-    const result = deduplicate(input, argv['deduplication-threshold']);
+    const result = deduplicate(input, argv['deduplication-threshold'], argv['auto-escape']);
 
     // Write output
     if (argv.output) {

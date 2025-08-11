@@ -38,7 +38,23 @@ deduplino --deduplication-threshold 0.5 -i input.lino
 
 ## How It Works
 
-Deduplino analyzes lino files to find patterns in link references and creates optimized representations using three pattern types:
+Deduplino analyzes lino files to find patterns in link references and creates optimized representations using three pattern types.
+
+### Auto-Escape Feature
+
+The `--auto-escape` option automatically converts non-lino text (like logs) into valid lino format:
+
+1. **First attempt**: Escape only words containing colons (timestamps, URLs, field names)
+2. **Second attempt**: Escape tokens with special characters (`!@#$%^&*+=|\\:;?/<>.,`)
+3. **Final fallback**: Escape all tokens except simple punctuation and quoted strings
+
+**Example log processing:**
+```
+Input:  2025-07-25T21:32:46Z updateTokens id: a43fad436d79
+Output: '2025-07-25T21:32:46Z' updateTokens 'id:' a43fad436d79
+```
+
+### Pattern Types
 
 ### 1. Exact Duplicates
 Links that appear identically multiple times.
@@ -127,6 +143,7 @@ The tool handles complex nested structures and can identify patterns in structur
 | `--input` | `-i` | Input file path (stdin if not provided) | - |
 | `--output` | `-o` | Output file path (stdout if not provided) | - |
 | `--deduplication-threshold` | `-p` | Percentage of patterns to apply (0-1) | 0.2 |
+| `--auto-escape` | | Automatically escape input to make it valid lino format | false |
 | `--help` | `-h` | Show help information | - |
 
 ## Examples
@@ -150,6 +167,16 @@ deduplino --deduplication-threshold 0.5 -i document.lino
 
 # Maximum deduplication - all patterns
 deduplino --deduplication-threshold 1.0 -i document.lino
+```
+
+### Auto-Escape for Logs
+```bash
+# Process log files that aren't valid lino format
+deduplino --auto-escape -i server.log -o processed.lino
+
+# Handle timestamps and special characters
+echo "2025-07-25T21:32:46Z error: connection failed" | deduplino --auto-escape
+# Output: '2025-07-25T21:32:46Z' 'error:' connection failed
 ```
 
 ### Pipeline Usage

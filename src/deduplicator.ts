@@ -272,17 +272,60 @@ function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
   return result;
 }
 
-export function deduplicate(input: string, topPercentage: number = 0.2): string {
+function autoEscape(input: string): string {
+  const parser = new Parser();
+  
+  // First, try escaping only words containing colons (like dates, URLs, etc.)
+  let escaped = input.replace(/\b([^\s'"()]+:[^\s'"()]*)\b/g, "'$1'");
+  
+  try {
+    parser.parse(escaped);
+    return escaped; // Success with minimal escaping
+  } catch (error) {
+    // If that doesn't work, try a second pass with more aggressive escaping
+    // Escape anything that looks problematic (contains special characters)
+    let secondPass = input.replace(/\b([^\s'"()]*[!@#$%^&*+=|\\:;?/<>.,]+[^\s'"()]*)\b/g, "'$1'");
+    
+    try {
+      parser.parse(secondPass);
+      return secondPass;
+    } catch (error2) {
+      // Final fallback: escape everything by splitting on whitespace
+      const lines = input.split('\n');
+      return lines.map(line => {
+        const tokens = line.split(/\s+/).filter(token => token.length > 0);
+        return tokens.map(token => {
+          // Don't escape tokens that are already quoted or are simple punctuation
+          if (token.startsWith("'") && token.endsWith("'")) return token;
+          if (token.startsWith('"') && token.endsWith('"')) return token;
+          if (/^[(){}[\],]+$/.test(token)) return token;
+          
+          // Escape everything else
+          return `'${token}'`;
+        }).join(' ');
+      }).join('\n');
+    }
+  }
+}
+
+export function deduplicate(input: string, topPercentage: number = 0.2, autoEscapeEnabled: boolean = false): string {
   if (!input.trim()) return input;
+  
+  let processedInput = input;
+  
+  // Apply auto-escape if enabled
+  if (autoEscapeEnabled) {
+    processedInput = autoEscape(input);
+  }
   
   // Parse input
   const parser = new Parser();
   let links: Link[];
   
   try {
-    links = parser.parse(input);
+    links = parser.parse(processedInput);
   } catch (error) {
-    return input; // Return original if parsing fails
+    return processedInput; // Return processed input if parsing fails
   }
   
   // Find and apply patterns

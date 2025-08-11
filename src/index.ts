@@ -4,6 +4,7 @@ import { hideBin } from 'yargs/helpers';
 import { readFileSync, writeFileSync } from 'fs';
 import { deduplicate } from './deduplicator.js';
 import { ParseError } from './errors.js';
+import { detectEdgeCases, analyzeEdgeCases } from './edge-cases-detector.js';
 
 const argv = await yargs(hideBin(process.argv))
   .usage('Usage: $0 [options]')
@@ -37,11 +38,17 @@ const argv = await yargs(hideBin(process.argv))
     type: 'boolean',
     default: false
   })
+  .option('detect-edge-cases', {
+    description: 'Analyze log file line-by-line to find cases that auto-escape cannot fix',
+    type: 'boolean',
+    default: false
+  })
   .example('$0 -i input.lino -o output.lino', 'Deduplicate input.lino and save to output.lino')
   .example('$0 --deduplication-threshold 0.5 < input.lino > output.lino', 'Process 50% most frequent links')
   .example('echo "(test)\n(test)" | $0 --piped-input', 'Process from stdin')
   .example('$0 --auto-escape -i log.txt', 'Auto-escape log file to make it valid lino format')
   .example('$0 --fail-on-parse-error -i input.lino', 'Exit with error code 1 if input is invalid lino format')
+  .example('$0 --detect-edge-cases -i server.log', 'Find log lines that auto-escape cannot fix')
   .help()
   .argv;
 
@@ -62,6 +69,13 @@ async function main() {
       console.error('Error: No input provided. Use --input to specify a file or --piped-input to read from stdin.');
       console.error('Run with --help for usage information.');
       process.exit(1);
+    }
+
+    // Handle edge case detection mode
+    if (argv['detect-edge-cases']) {
+      const edgeCases = detectEdgeCases(input);
+      analyzeEdgeCases(edgeCases);
+      return;
     }
 
     // Validate deduplication-threshold

@@ -30,7 +30,7 @@ npm install -g deduplino
 deduplino -i input.lino -o output.lino
 
 # From stdin to stdout
-echo "(test link)\n(test link)" | deduplino
+echo "(test link)\n(test link)" | deduplino --piped-input
 
 # Process with different threshold
 deduplino --deduplication-threshold 0.5 -i input.lino
@@ -140,10 +140,11 @@ The tool handles complex nested structures and can identify patterns in structur
 
 | Option | Short | Description | Default |
 |--------|--------|-------------|---------|
-| `--input` | `-i` | Input file path (stdin if not provided) | - |
+| `--input` | `-i` | Input file path | - |
 | `--output` | `-o` | Output file path (stdout if not provided) | - |
 | `--deduplication-threshold` | `-p` | Percentage of patterns to apply (0-1) | 0.2 |
 | `--auto-escape` | | Automatically escape input to make it valid lino format | false |
+| `--piped-input` | | Read from stdin (use when piping data) | false |
 | `--help` | `-h` | Show help information | - |
 
 ## Examples
@@ -154,7 +155,10 @@ The tool handles complex nested structures and can identify patterns in structur
 deduplino -i document.lino -o compressed.lino
 
 # Process from pipeline
-cat document.lino | deduplino > compressed.lino
+cat document.lino | deduplino --piped-input > compressed.lino
+
+# Quick stdin processing
+echo "(test)\n(test)" | deduplino --piped-input
 ```
 
 ### Threshold Control
@@ -175,17 +179,17 @@ deduplino --deduplication-threshold 1.0 -i document.lino
 deduplino --auto-escape -i server.log -o processed.lino
 
 # Handle timestamps and special characters
-echo "2025-07-25T21:32:46Z error: connection failed" | deduplino --auto-escape
+echo "2025-07-25T21:32:46Z error: connection failed" | deduplino --auto-escape --piped-input
 # Output: '2025-07-25T21:32:46Z' 'error:' connection failed
 ```
 
 ### Pipeline Usage
 ```bash
 # Chain with other tools
-some-tool | deduplino | other-tool
+some-tool | deduplino --piped-input | other-tool
 
 # Multiple processing steps
-cat input.lino | deduplino -p 0.3 | tee intermediate.lino | final-processor
+cat input.lino | deduplino --piped-input -p 0.3 | tee intermediate.lino | final-processor
 ```
 
 ## Pattern Selection Strategy

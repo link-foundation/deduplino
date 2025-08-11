@@ -26,9 +26,14 @@ const argv = await yargs(hideBin(process.argv))
     type: 'boolean',
     default: false
   })
+  .option('piped-input', {
+    description: 'Read from stdin (use when piping data)',
+    type: 'boolean',
+    default: false
+  })
   .example('$0 -i input.lino -o output.lino', 'Deduplicate input.lino and save to output.lino')
   .example('$0 --deduplication-threshold 0.5 < input.lino > output.lino', 'Process 50% most frequent links')
-  .example('echo "(test)\n(test)" | $0', 'Process from stdin')
+  .example('echo "(test)\n(test)" | $0 --piped-input', 'Process from stdin')
   .example('$0 --auto-escape -i log.txt', 'Auto-escape log file to make it valid lino format')
   .help()
   .argv;
@@ -39,13 +44,17 @@ async function main() {
     let input: string;
     if (argv.input) {
       input = readFileSync(argv.input, 'utf8');
-    } else {
+    } else if (argv['piped-input']) {
       // Read from stdin
       const chunks: Uint8Array[] = [];
       for await (const chunk of process.stdin) {
         chunks.push(chunk);
       }
       input = Buffer.concat(chunks).toString('utf8');
+    } else {
+      console.error('Error: No input provided. Use --input to specify a file or --piped-input to read from stdin.');
+      console.error('Run with --help for usage information.');
+      process.exit(1);
     }
 
     // Validate deduplication-threshold

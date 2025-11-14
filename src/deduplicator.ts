@@ -8,43 +8,69 @@ interface Pattern {
   count: number;
 }
 
+/**
+ * Converts a Link object to its string representation by flattening nested values.
+ * @param link - The Link object to convert
+ * @returns String representation of the link
+ */
 function linkToString(link: Link): string {
   // Simple links with just an id
   if (link.id && (!link.values || link.values.length === 0)) {
     return link.id;
   }
-  
+
   // Complex links with values - flatten recursively
   const parts: string[] = [];
   const flatten = (l: Link) => {
     if (l.id && !l.values?.length) {
       parts.push(l.id);
     } else if (l.values?.length) {
+      // Safe to access since we checked length above
       l.values.forEach(flatten);
     }
   };
-  
+
   if (link.values?.length) {
+    // Safe to access since we checked length above
     link.values.forEach(flatten);
     return parts.join(' ');
   }
-  
+
   return link.id || '';
 }
 
+/**
+ * Finds common prefix or suffix pattern between two reference arrays.
+ * Ensures at least one reference remains unique to each array.
+ * @param references1 - First array of references
+ * @param references2 - Second array of references
+ * @param type - Type of pattern to find ('prefix' or 'suffix')
+ * @returns The common pattern string, or null if no pattern found
+ */
 function findCommonPattern(references1: string[], references2: string[], type: 'prefix' | 'suffix'): string | null {
   const len1 = references1.length;
   const len2 = references2.length;
+
+  // Need at least 2 references in each to have a meaningful pattern
+  // (one for the pattern, one to remain unique)
+  const MIN_REFERENCES_FOR_PATTERN = 2;
+  if (len1 < MIN_REFERENCES_FOR_PATTERN || len2 < MIN_REFERENCES_FOR_PATTERN) {
+    return null;
+  }
+
   let matchLen = 0;
-  
+
   if (type === 'prefix') {
-    while (matchLen < Math.min(len1 - 1, len2 - 1) && 
-           references1[matchLen] === references2[matchLen]) {
+    // Keep at least one reference different (-1 offset)
+    const maxMatch = Math.min(len1 - 1, len2 - 1);
+    while (matchLen < maxMatch && references1[matchLen] === references2[matchLen]) {
       matchLen++;
     }
     return matchLen > 0 ? references1.slice(0, matchLen).join(' ') : null;
   } else {
-    while (matchLen < Math.min(len1 - 1, len2 - 1) &&
+    // Keep at least one reference different (-1 offset)
+    const maxMatch = Math.min(len1 - 1, len2 - 1);
+    while (matchLen < maxMatch &&
            references1[len1 - 1 - matchLen] === references2[len2 - 1 - matchLen]) {
       matchLen++;
     }
@@ -52,9 +78,14 @@ function findCommonPattern(references1: string[], references2: string[], type: '
   }
 }
 
+/**
+ * Identifies deduplication patterns (exact, prefix, and suffix) from an array of links.
+ * @param links - Array of Link objects to analyze
+ * @returns Array of identified patterns with their frequencies
+ */
 function findPatterns(links: Link[]): Pattern[] {
   const patterns: Pattern[] = [];
-  
+
   // Filter links with deduplicatable content (2+ references)
   const validLinks = links.filter(link => {
     const content = linkToString(link);
@@ -155,14 +186,18 @@ function findPatterns(links: Link[]): Pattern[] {
   // Convert maps to patterns
   const addPatternsFromMap = (map: Map<string, Set<string>>, type: 'prefix' | 'suffix') => {
     map.forEach((items, pattern) => {
-      if (items.size >= 1) {  // For structured duplicates, even 1 unique item counts
-        const itemArray = Array.from(items);
+      const itemArray = Array.from(items);
+      // Calculate total occurrences across all items
+      const count = itemArray.reduce((sum, item) =>
+        sum + validLinks.filter(link => linkToString(link) === item).length, 0);
+
+      // Only create pattern if it appears at least twice (deduplication requires 2+ occurrences)
+      if (count >= 2) {
         patterns.push({
           type,
           pattern,
           items: itemArray,
-          count: itemArray.reduce((sum, item) => 
-            sum + validLinks.filter(link => linkToString(link) === item).length, 0)
+          count
         });
       }
     });
@@ -174,6 +209,13 @@ function findPatterns(links: Link[]): Pattern[] {
   return patterns;
 }
 
+/**
+ * Selects the best patterns based on scoring and eliminates overlapping patterns.
+ * Patterns are scored by frequency × pattern length.
+ * @param patterns - Array of patterns to select from
+ * @param topPercentage - Percentage of top patterns to select (0-1)
+ * @returns Array of non-overlapping patterns sorted by score
+ */
 function selectBestPatterns(patterns: Pattern[], topPercentage: number): Pattern[] {
   // Sort by score (count * pattern length)
   const sorted = patterns.sort((a, b) => {
@@ -203,15 +245,32 @@ function selectBestPatterns(patterns: Pattern[], topPercentage: number): Pattern
   return selected;
 }
 
+/**
+ * Creates a reference definition link (e.g., "1: pattern text").
+ * @param refId - The numeric reference ID
+ * @param references - Array of reference strings that make up the pattern
+ * @returns Link object representing the reference definition
+ */
 function createReference(refId: number, references: string[]): Link {
   const valueLinks = references.map(reference => new Link(reference, []));
   return new Link(refId.toString(), valueLinks);
 }
 
+/**
+ * Creates a compound link from multiple parts (e.g., "foo 1" for suffix pattern).
+ * @param parts - Array of Link objects to combine
+ * @returns Link object with null ID and the parts as values
+ */
 function createCompoundLink(parts: Link[]): Link {
   return new Link(null, parts);
 }
 
+/**
+ * Applies selected patterns to links, replacing matching content with references.
+ * @param links - Original array of links
+ * @param patterns - Selected patterns to apply
+ * @returns New array of links with patterns applied
+ */
 function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
   const replacements = new Map<string, { refId: number; pattern: Pattern }>();
   let nextRefId = 1;
@@ -273,11 +332,18 @@ function applyPatterns(links: Link[], patterns: Pattern[]): Link[] {
   return result;
 }
 
+/**
+ * Attempts to automatically escape input text to make it valid lino format.
+ * Uses a multi-pass strategy with increasing aggressiveness.
+ * @param input - Raw text input that may not be valid lino format
+ * @returns Escaped string that should parse as valid lino format
+ */
 function autoEscape(input: string): string {
   const parser = new Parser();
-  
+
   // First, try escaping only references containing colons (like dates, URLs, etc.)
-  let escaped = input.replace(/\b([^\s'"()]+:[^\s'"()]*)\b/g, "'$1'");
+  // Use lookahead/lookbehind instead of word boundaries for better handling of special chars
+  let escaped = input.replace(/(?<=^|\s)([^\s'"()]+:[^\s'"()]*)(?=\s|$)/g, "'$1'");
   
   try {
     parser.parse(escaped);
@@ -340,6 +406,15 @@ export interface DeduplicationResult {
   patternsApplied: number;
 }
 
+/**
+ * Main deduplication function that processes lino format text to identify and apply patterns.
+ * @param input - Input text in lino format (or raw text if autoEscapeEnabled is true)
+ * @param topPercentage - Percentage of top patterns to apply (0-1), default 0.2
+ * @param autoEscapeEnabled - Whether to attempt automatic escaping of input, default false
+ * @param failOnParseError - Whether to throw ParseError on parsing failure, default false
+ * @returns DeduplicationResult with output, success status, and pattern count
+ * @throws ParseError if failOnParseError is true and parsing fails
+ */
 export function deduplicate(input: string, topPercentage: number = 0.2, autoEscapeEnabled: boolean = false, failOnParseError: boolean = false): DeduplicationResult {
   if (!input.trim()) return { output: input, success: false, reason: 'Empty input', patternsApplied: 0 };
   

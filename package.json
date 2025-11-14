@@ -3,9 +3,25 @@
   "version": "0.0.9",
   "description": "CLI tool for deduplicating lino format",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./deduplicator": {
+      "import": "./dist/deduplicator.js",
+      "types": "./dist/deduplicator.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node",
+    "build": "bun build src/index.ts --outdir dist --target node && bun build src/deduplicator.ts --outdir dist --target node && bun build src/errors.ts --outdir dist --target node && bun build src/edge-cases-detector.ts --outdir dist --target node",
     "dev": "bun run src/index.ts",
     "test": "bun test",
     "test:watch": "bun test --watch"
@@ -16,10 +32,19 @@
   "keywords": [
     "lino",
     "deduplication",
-    "cli"
+    "cli",
+    "pattern-matching",
+    "compression"
   ],
   "author": "link-foundation",
   "license": "Unlicense",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/link-foundation/deduplino"
+  },
+  "bugs": {
+    "url": "https://github.com/link-foundation/deduplino/issues"
+  },
   "dependencies": {
     "@linksplatform/protocols-lino": "^0.0.3",
     "yargs": "^17.7.2"
@@ -27,5 +52,8 @@
   "devDependencies": {
     "@types/yargs": "^17.0.32",
     "bun-types": "latest"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

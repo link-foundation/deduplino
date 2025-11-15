@@ -1,4 +1,4 @@
-import { expect, test, describe } from "bun:test";
+import { test, describe, expect } from "test-anywhere";
 import { detectEdgeCases, analyzeEdgeCases } from "../src/edge-cases-detector";
 
 describe("Edge Case Detector", () => {
@@ -85,9 +85,11 @@ line4`;
       edgeCases.totalLinesProcessed = 10;
 
       // Just verify it doesn't throw
-      expect(() => {
-        analyzeEdgeCases(edgeCases);
-      }).not.toThrow();
+      // TODO: test-anywhere bug - expect().not.toThrow() is not supported
+      // expect(() => {
+      //   analyzeEdgeCases(edgeCases);
+      // }).not.toThrow();
+      analyzeEdgeCases(edgeCases); // Just call directly for now
     });
 
     test("should handle edge cases array with metadata", () => {
@@ -101,9 +103,11 @@ line4`;
       edgeCases.totalLinesProcessed = 5;
 
       // Just verify it doesn't throw
-      expect(() => {
-        analyzeEdgeCases(edgeCases);
-      }).not.toThrow();
+      // TODO: test-anywhere bug - expect().not.toThrow() is not supported
+      // expect(() => {
+      //   analyzeEdgeCases(edgeCases);
+      // }).not.toThrow();
+      analyzeEdgeCases(edgeCases); // Just call directly for now
     });
 
     test("should handle missing totalLinesProcessed gracefully", () => {
@@ -116,9 +120,7 @@ line4`;
       ];
 
       // Should fallback to edge cases length
-      expect(() => {
-        analyzeEdgeCases(edgeCases);
-      }).not.toThrow();
+      analyzeEdgeCases(edgeCases);
     });
   });
 
@@ -152,7 +154,9 @@ normal: content
 ( ) ) (`;
 
       const edgeCases = detectEdgeCases(content);
-      expect(edgeCases.length).toBeGreaterThan(0);
+      // TODO: test-anywhere bug - expect().toBeGreaterThan() is not supported
+      // expect(edgeCases.length).toBeGreaterThan(0);
+      expect(edgeCases.length > 0).toBe(true);
     });
 
     test("should not detect cases that auto-escape can fix", () => {

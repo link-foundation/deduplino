@@ -1,4 +1,4 @@
-import { expect, test, describe } from "bun:test";
+import { test, describe, expect } from "test-anywhere";
 import { deduplicate } from "../src/deduplicator";
 
 describe("Lino Deduplicator", () => {

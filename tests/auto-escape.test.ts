@@ -1,4 +1,4 @@
-import { expect, test, describe } from "bun:test";
+import { test, describe, expect } from "test-anywhere";
 import { deduplicate } from "../src/deduplicator";
 import { ParseError } from "../src/errors";
 
@@ -76,7 +76,7 @@ describe("Auto-escape functionality", () => {
 describe("Auto-escape failure cases", () => {
   test("should fail on unbalanced parentheses even with auto-escape", () => {
     const input = `( ) ) ( unbalanced`;
-    
+
     expect(() => {
       deduplicate(input, 0.2, true, true); // auto-escape=true, fail-on-parse-error=true
     }).toThrow(ParseError);
@@ -84,7 +84,7 @@ describe("Auto-escape failure cases", () => {
 
   test("should fail on sequences of only parentheses", () => {
     const input = `))(((`;
-    
+
     expect(() => {
       deduplicate(input, 0.2, true, true);
     }).toThrow(ParseError);
@@ -92,7 +92,7 @@ describe("Auto-escape failure cases", () => {
 
   test("should fail on unbalanced nested parentheses structures", () => {
     const input = `( ( ( ) )`;
-    
+
     expect(() => {
       deduplicate(input, 0.2, true, true);
     }).toThrow(ParseError);
@@ -119,11 +119,11 @@ describe("Auto-escape failure cases", () => {
     const input1 = `(unclosed (nested structure`;
     const result1 = deduplicate(input1, 0.2, true, false);
     expect(result1.output).toBe("'(unclosed' '(nested' structure");
-    
+
     const input2 = `(mixed ] bracket types)`;
     const result2 = deduplicate(input2, 0.2, true, false);
     expect(result2.output).toBe("mixed ] bracket types");
-    
+
     const input3 = `(level1 (level2 (level3 missing close`;
     const result3 = deduplicate(input3, 0.2, true, false);
     expect(result3.output).toBe("'(level1' '(level2' '(level3' missing close");

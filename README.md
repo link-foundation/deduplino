@@ -34,6 +34,9 @@ echo "(test link)\n(test link)" | deduplino --piped-input
 
 # Process with different threshold
 deduplino --deduplication-threshold 0.5 -i input.lino
+
+# Process from stdin with custom threshold
+cat input.lino | deduplino --piped-input --deduplication-threshold 0.5
 ```
 
 ## How It Works

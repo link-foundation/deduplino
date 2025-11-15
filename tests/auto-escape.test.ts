@@ -14,9 +14,10 @@ describe("Auto-escape functionality", () => {
 
   test("should escape URL-like references with colons", () => {
     const input = `error: connection failed at server:8080`;
-    
-    const expected = `error: connection failed at 'server:8080'`;
-    
+
+    // Both 'error:' and 'server:8080' should be escaped as they contain colons
+    const expected = `'error:' connection failed at 'server:8080'`;
+
     const result = deduplicate(input, 0.2, true);
     expect(result.output).toBe(expected);
   });

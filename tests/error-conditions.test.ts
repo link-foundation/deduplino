@@ -57,9 +57,7 @@ describe("Error Conditions", () => {
       const result = deduplicate(input, 0);
       // With threshold 0, Math.max(1, 0) still applies at least 1 pattern
       expect(result.success).toBe(true);
-      // TODO: test-anywhere bug - expect().toBeGreaterThanOrEqual() is not supported
-      // expect(result.patternsApplied).toBeGreaterThanOrEqual(1);
-      expect(result.patternsApplied >= 1).toBe(true);
+      expect(result.patternsApplied).toBeGreaterThanOrEqual(1);
     });
 
     test("should accept threshold of 1", () => {

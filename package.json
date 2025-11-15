@@ -52,7 +52,7 @@
   "devDependencies": {
     "@types/yargs": "^17.0.32",
     "bun-types": "latest",
-    "test-anywhere": "^0.5.0"
+    "test-anywhere": "^0.6.0"
   },
   "engines": {
     "node": ">=16.0.0"

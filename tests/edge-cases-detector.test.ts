@@ -84,12 +84,9 @@ line4`;
       const edgeCases: any[] = [];
       edgeCases.totalLinesProcessed = 10;
 
-      // Just verify it doesn't throw
-      // TODO: test-anywhere bug - expect().not.toThrow() is not supported
-      // expect(() => {
-      //   analyzeEdgeCases(edgeCases);
-      // }).not.toThrow();
-      analyzeEdgeCases(edgeCases); // Just call directly for now
+      expect(() => {
+        analyzeEdgeCases(edgeCases);
+      }).not.toThrow();
     });
 
     test("should handle edge cases array with metadata", () => {
@@ -102,12 +99,9 @@ line4`;
       ];
       edgeCases.totalLinesProcessed = 5;
 
-      // Just verify it doesn't throw
-      // TODO: test-anywhere bug - expect().not.toThrow() is not supported
-      // expect(() => {
-      //   analyzeEdgeCases(edgeCases);
-      // }).not.toThrow();
-      analyzeEdgeCases(edgeCases); // Just call directly for now
+      expect(() => {
+        analyzeEdgeCases(edgeCases);
+      }).not.toThrow();
     });
 
     test("should handle missing totalLinesProcessed gracefully", () => {
@@ -154,9 +148,7 @@ normal: content
 ( ) ) (`;
 
       const edgeCases = detectEdgeCases(content);
-      // TODO: test-anywhere bug - expect().toBeGreaterThan() is not supported
-      // expect(edgeCases.length).toBeGreaterThan(0);
-      expect(edgeCases.length > 0).toBe(true);
+      expect(edgeCases.length).toBeGreaterThan(0);
     });
 
     test("should not detect cases that auto-escape can fix", () => {

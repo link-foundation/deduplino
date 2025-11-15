@@ -11,7 +11,7 @@
       "devDependencies": {
         "@types/yargs": "^17.0.32",
         "bun-types": "latest",
-        "test-anywhere": "^0.5.0",
+        "test-anywhere": "^0.6.0",
       },
     },
   },
@@ -54,7 +54,7 @@
 
     "strip-ansi": ["strip-ansi@6.0.1", "", { "dependencies": { "ansi-regex": "^5.0.1" } }, "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A=="],
 
-    "test-anywhere": ["test-anywhere@0.5.0", "", {}, "sha512-psC8gb1FJzCmnZP3T/JWI73GrYvGfkY3yI82jQOG3TTP1DCeXsLjetOo68KtnlNPpM/iCLJVhS+Pk25OS8Dkew=="],
+    "test-anywhere": ["test-anywhere@0.6.0", "", {}, "sha512-BTWYYmHXPbP4pnHpWB5N3frx3GrWStIzjur2icRjVfrIkAPM9nBu1yUAqp+YPRXn1d95Bw9twxRy/O3EBsKEyA=="],
 
     "undici-types": ["undici-types@7.10.0", "", {}, "sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag=="],
 

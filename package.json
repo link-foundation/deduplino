@@ -1,6 +1,6 @@
 {
   "name": "deduplino",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "description": "CLI tool for deduplicating lino format",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -46,11 +46,10 @@
     "url": "https://github.com/link-foundation/deduplino/issues"
   },
   "dependencies": {
-    "@linksplatform/protocols-lino": "^0.0.3",
-    "yargs": "^17.7.2"
+    "links-notation": "^0.13.0",
+    "lino-arguments": "^0.2.1"
   },
   "devDependencies": {
-    "@types/yargs": "^17.0.32",
     "bun-types": "latest",
     "test-anywhere": "^0.6.0"
   },

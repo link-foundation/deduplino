@@ -1,4 +1,4 @@
-import { Parser, Link, formatLinks } from '@linksplatform/protocols-lino';
+import { Parser, Link, formatLinks } from 'links-notation';
 import { ParseError } from './errors.js';
 
 interface Pattern {

@@ -1,63 +1,68 @@
 #!/usr/bin/env node
-import yargs from 'yargs';
-import { hideBin } from 'yargs/helpers';
+import { makeConfig } from 'lino-arguments';
 import { readFileSync, writeFileSync } from 'fs';
 import { deduplicate, DeduplicationResult } from './deduplicator.js';
 import { ParseError } from './errors.js';
 import { detectEdgeCases, analyzeEdgeCases } from './edge-cases-detector.js';
 import { extname, basename } from 'path';
 
-const argv = await yargs(hideBin(process.argv))
-  .usage('Usage: $0 [input-file] [options]')
-  .positional('input-file', {
-    describe: 'Input file path',
-    type: 'string'
-  })
-  .option('input', {
-    alias: 'i',
-    description: 'Input file path (alternative to positional argument)',
-    type: 'string'
-  })
-  .option('output', {
-    alias: 'o',
-    description: 'Output file path (if not provided, writes to stdout)',
-    type: 'string'
-  })
-  .option('deduplication-threshold', {
-    description: 'Percentage of most frequent links to deduplicate (0-1)',
-    type: 'number',
-    default: 0.2
-  })
-  .option('auto-escape', {
-    description: 'Automatically escape input to make it valid lino format',
-    type: 'boolean',
-    default: false
-  })
-  .option('piped-input', {
-    description: 'Read from stdin (use when piping data)',
-    type: 'boolean',
-    default: false
-  })
-  .option('fail-on-parse-error', {
-    description: 'Exit with code 1 if input cannot be parsed as lino format',
-    type: 'boolean',
-    default: false
-  })
-  .option('detect-auto-escape-edge-cases', {
-    description: 'Analyze log file line-by-line to find cases that auto-escape cannot fix',
-    type: 'boolean',
-    default: false
-  })
-  .example('$0 input.lino', 'Deduplicate input.lino and save to input.deduped.lino')
-  .example('$0 input.lino -o output.lino', 'Deduplicate input.lino and save to output.lino')
-  .example('$0 -i input.lino -o output.lino', 'Alternative syntax using -i flag')
-  .example('$0 --piped-input --deduplication-threshold 0.5 < input.lino > output.lino', 'Process 50% most frequent links from stdin')
-  .example('echo "(test)\n(test)" | $0 --piped-input', 'Process from stdin')
-  .example('$0 --auto-escape -i log.txt', 'Auto-escape log file to make it valid lino format')
-  .example('$0 --fail-on-parse-error -i input.lino', 'Exit with error code 1 if input is invalid lino format')
-  .example('$0 --detect-auto-escape-edge-cases -i server.log', 'Find log lines that auto-escape cannot fix')
-  .help()
-  .argv;
+const config = makeConfig({
+  yargs: ({ yargs, getenv }) =>
+    yargs
+      .usage('Usage: $0 [input-file] [options]')
+      .command('$0 [input-file]', 'Deduplicate lino format files', (yargs) => {
+        return yargs.positional('input-file', {
+          describe: 'Input file path',
+          type: 'string'
+        });
+      })
+      .option('input', {
+        alias: 'i',
+        description: 'Input file path (alternative to positional argument)',
+        type: 'string',
+        default: getenv('INPUT', '')
+      })
+      .option('output', {
+        alias: 'o',
+        description: 'Output file path (if not provided, writes to stdout)',
+        type: 'string',
+        default: getenv('OUTPUT', '')
+      })
+      .option('deduplication-threshold', {
+        description: 'Percentage of most frequent links to deduplicate (0-1)',
+        type: 'number',
+        default: getenv('DEDUPLICATION_THRESHOLD', 0.2)
+      })
+      .option('auto-escape', {
+        description: 'Automatically escape input to make it valid lino format',
+        type: 'boolean',
+        default: getenv('AUTO_ESCAPE', false)
+      })
+      .option('piped-input', {
+        description: 'Read from stdin (use when piping data)',
+        type: 'boolean',
+        default: getenv('PIPED_INPUT', false)
+      })
+      .option('fail-on-parse-error', {
+        description: 'Exit with code 1 if input cannot be parsed as lino format',
+        type: 'boolean',
+        default: getenv('FAIL_ON_PARSE_ERROR', false)
+      })
+      .option('detect-auto-escape-edge-cases', {
+        description: 'Analyze log file line-by-line to find cases that auto-escape cannot fix',
+        type: 'boolean',
+        default: false
+      })
+      .example('$0 input.lino', 'Deduplicate input.lino and save to input.deduped.lino')
+      .example('$0 input.lino -o output.lino', 'Deduplicate input.lino and save to output.lino')
+      .example('$0 -i input.lino -o output.lino', 'Alternative syntax using -i flag')
+      .example('$0 --piped-input --deduplication-threshold 0.5 < input.lino > output.lino', 'Process 50% most frequent links from stdin')
+      .example('echo "(test)\n(test)" | $0 --piped-input', 'Process from stdin')
+      .example('$0 --auto-escape -i log.txt', 'Auto-escape log file to make it valid lino format')
+      .example('$0 --fail-on-parse-error -i input.lino', 'Exit with error code 1 if input is invalid lino format')
+      .example('$0 --detect-auto-escape-edge-cases -i server.log', 'Find log lines that auto-escape cannot fix')
+      .help()
+});
 
 /**
  * Generates a smart output path based on the input file path.
@@ -102,7 +107,8 @@ async function main() {
     const MAX_INPUT_SIZE = 10 * 1024 * 1024; // 10MB
 
     // Determine input source (positional argument takes precedence)
-    const inputFile = argv._[0] as string || argv.input;
+    // lino-arguments converts kebab-case to camelCase (input-file -> inputFile)
+    const inputFile = (config.inputFile as string) || (config.input as string);
     let input: string;
     let outputFile: string | undefined;
 
@@ -129,12 +135,12 @@ async function main() {
       }
 
       // Generate smart output path if output not specified
-      if (!argv.output) {
+      if (!config.output) {
         outputFile = generateOutputPath(inputFile);
       } else {
-        outputFile = argv.output;
+        outputFile = config.output as string;
       }
-    } else if (argv['piped-input']) {
+    } else if (config.pipedInput) {
       // Read from stdin with error handling
       const chunks: Uint8Array[] = [];
       try {
@@ -152,7 +158,7 @@ async function main() {
         console.error(`Error reading from stdin: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
       }
-      outputFile = argv.output; // Could be undefined (stdout)
+      outputFile = config.output as string | undefined; // Could be undefined (stdout)
     } else {
       console.error('Error: No input provided.');
       console.error('');
@@ -166,21 +172,22 @@ async function main() {
     }
 
     // Handle edge case detection mode (no threshold validation needed)
-    if (argv['detect-auto-escape-edge-cases']) {
+    if (config.detectAutoEscapeEdgeCases) {
       const edgeCases = detectEdgeCases(input);
       analyzeEdgeCases(edgeCases);
       return;
     }
 
     // Validate deduplication-threshold (only when actually deduplicating)
-    if (argv['deduplication-threshold'] < 0 || argv['deduplication-threshold'] > 1) {
+    const threshold = config.deduplicationThreshold as number;
+    if (threshold < 0 || threshold > 1) {
       console.error('Error: --deduplication-threshold must be between 0 and 1');
-      console.error(`Received: ${argv['deduplication-threshold']}`);
+      console.error(`Received: ${threshold}`);
       process.exit(1);
     }
 
     // Process deduplication
-    const result: DeduplicationResult = deduplicate(input, argv['deduplication-threshold'], argv['auto-escape'], argv['fail-on-parse-error']);
+    const result: DeduplicationResult = deduplicate(input, threshold, config.autoEscape as boolean, config.failOnParseError as boolean);
 
     // Write output
     if (outputFile) {
